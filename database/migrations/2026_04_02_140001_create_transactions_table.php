@@ -11,18 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subscriptions', function (Blueprint $table) {
+        Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
             $table->foreignId('merchant_id')->nullable()->constrained();
-            $table->string('name');
-            $table->decimal('amount', 8, 2);
+            $table->string('merchant_name')->nullable();
+            $table->text('description')->nullable();
+            $table->decimal('amount', 10, 2);
             $table->string('currency', 3)->default('USD');
-            $table->enum('billing_cycle', ['weekly', 'monthly', 'quarterly', 'yearly']);
-            $table->enum('status', ['active', 'cancelled', 'paused'])->default('active');
-            $table->decimal('confidence_score', 5, 2)->default(0);
-            $table->date('next_billing_date')->nullable();
-            $table->timestamp('detected_at')->nullable();
+            $table->date('transaction_date');
             $table->timestamps();
         });
     }
@@ -32,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('subscriptions');
+        Schema::dropIfExists('transactions');
     }
 };

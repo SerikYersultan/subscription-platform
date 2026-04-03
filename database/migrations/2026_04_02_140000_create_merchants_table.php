@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('alerts', function (Blueprint $table) {
+        Schema::create('merchants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
-            $table->foreignId('subscription_id')->nullable()->constrained();
-            $table->enum('type', ['renewal', 'price_change', 'trial_ending', 'cancelled']);
-            $table->text('message');
-            $table->timestamp('read_at')->nullable();
+            $table->string('name');
+            $table->string('canonical_name')->nullable();
             $table->timestamps();
         });
     }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('alerts');
+        Schema::dropIfExists('merchants');
     }
 };

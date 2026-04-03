@@ -4,22 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Subscription extends Model
+class Transaction extends Model
 {
     protected $fillable = [
         'user_id',
         'merchant_id',
-        'name',
+        'merchant_name',
+        'description',
         'amount',
         'currency',
-        'billing_cycle',
-        'status',
-        'confidence_score',
-        'next_billing_date',
-        'detected_at',
+        'transaction_date',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'transaction_date' => 'date',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -29,15 +33,5 @@ class Subscription extends Model
     public function merchant(): BelongsTo
     {
         return $this->belongsTo(Merchant::class);
-    }
-
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
-
-    public function alerts(): HasMany
-    {
-        return $this->hasMany(Alert::class);
     }
 }
