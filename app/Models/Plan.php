@@ -10,8 +10,16 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'price',
-        'duration_days',
+        'billing_cycle',
+        'features',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'features' => 'array',
+        ];
+    }
 
     public function subscriptions(): HasMany
     {

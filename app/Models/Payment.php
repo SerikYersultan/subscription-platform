@@ -12,6 +12,7 @@ class Payment extends Model
         'amount',
         'payment_method',
         'status',
+        'paid_at',
     ];
 
     public function subscription(): BelongsTo

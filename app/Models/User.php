@@ -23,6 +23,16 @@ class User extends Authenticatable
         return $this->hasMany(Subscription::class);
     }
 
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function merchants(): HasMany
+    {
+        return $this->hasMany(Merchant::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
