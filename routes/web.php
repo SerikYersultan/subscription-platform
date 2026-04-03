@@ -4,7 +4,12 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\MerchantController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\AlertController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ReportController;
+
 
 // Redirect home to dashboard
 Route::get('/', function () {
@@ -33,6 +38,18 @@ Route::middleware('auth')->group(function () {
 
     // Merchants
     Route::get('/merchants', [MerchantController::class, 'index'])->name('merchants.index');
+    
+    // Dashboard, Subscriptions, Alerts (ваш добавленный код)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
+
+    Route::get('/reports/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
+
+
+    Route::get('/reports/alerts-pdf', [ReportController::class, 'alertsPdf'])->name('reports.alerts-pdf');
+
+
 });
 
 require __DIR__.'/auth.php';

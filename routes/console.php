@@ -1,8 +1,12 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+use App\Services\AlertService;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+Artisan::command('alerts:check', function (AlertService $alertService) {
+    $alertService->checkAllSubscriptions();
+    $this->info('Alerts checked successfully.');
+})->purpose('Check subscriptions and create alerts');
+
+Schedule::command('alerts:check')->daily();
