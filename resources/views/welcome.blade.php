@@ -145,6 +145,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .chart-area { padding: 16px; }
 .empty-state { padding: 32px 16px; text-align: center; color: #9ca3af; font-size: 12px; }
 
+.filter-bar { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.filter-bar label { font-size: 10px; font-weight: 500; color: #6b7280; display: block; margin-bottom: 4px; }
+.filter-input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; color: #111827; outline: none; background: #fff; }
+.filter-input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(26,86,219,0.1); }
+
+.profile-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 24px; margin-bottom: 16px; }
+.profile-card h3 { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f3f4f6; }
+.profile-field { margin-bottom: 14px; }
+.profile-label { font-size: 11px; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block; }
+.profile-input { width: 100%; padding: 8px 11px; border: 1px solid #d1d5db; border-radius: 7px; font-size: 13px; color: #111827; outline: none; }
+.profile-input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(26,86,219,0.1); }
+.profile-error { font-size: 11px; color: #ef4444; margin-top: 3px; }
+.profile-success { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #166534; margin-bottom: 14px; }
+.profile-danger { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 20px 24px; }
+.profile-danger h3 { font-size: 13px; font-weight: 600; color: #991b1b; margin-bottom: 8px; }
+.profile-danger p { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+
+.merchant-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.merchant-table th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 500; color: #6b7280; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+.merchant-table td { padding: 10px 16px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+.merchant-table tr:last-child td { border-bottom: none; }
+.merchant-table tr:hover td { background: #f9fafb; }
+
 #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
     </style>
 </head>
@@ -152,7 +175,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <div class="app">
   <div class="sidebar">
-    <div class="sidebar-logo">
+    <div class="sidebar-logo" onclick="setPage('dashboard')" style="cursor:pointer">
       <div class="logo-mark">
         <div class="logo-icon">
           <svg viewBox="0 0 16 16"><path d="M8 2C4.7 2 2 4.7 2 8s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm0 8c-1.7 0-3.1-.8-4-2 .1-1.3 2.7-2 4-2s3.9.7 4 2c-.9 1.2-2.3 2-4 2z"/></svg>
@@ -200,13 +223,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm2 3v6M8 7v4M11 5v6" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
         Reports
       </div>
+      <div class="nav-item" onclick="setPage('merchants')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12l-1.5 5H3.5L2 3zm1.5 5v5h9V8" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+        Merchants
+        @if ($merchants->count() > 0)
+        <span class="nav-badge blue">{{ $merchants->count() }}</span>
+        @endif
+      </div>
       <div class="nav-item" onclick="setPage('import')">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 10V3M5 7l3 3 3-3M3 13h10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
         Import CSV
       </div>
+      <div class="nav-section">Account</div>
+      <div class="nav-item" onclick="setPage('profile')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+        Profile
+      </div>
     </div>
     <div class="sidebar-footer">
-      <div class="user-row">
+      <div class="user-row" onclick="setPage('profile')" style="cursor:pointer">
         <div class="avatar">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</div>
         <div>
           <div class="user-name">{{ Auth::user()->name }}</div>
@@ -234,6 +269,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 10V3M5 7l3 3 3-3M3 13h10"/></svg>
             Import CSV
           </button>
+          <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form">
+            @csrf
+            <button type="submit" class="btn primary" id="detect-btn">
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="m11 11 3 3" stroke-linecap="round"/></svg>
+              Run Detector
+            </button>
+          </form>
         </div>
       </div>
       <div class="content">
@@ -485,15 +527,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div id="page-transactions" style="display:none;">
       <div class="topbar"><div class="page-title">Transactions</div></div>
       <div class="content">
+        <div class="filter-bar">
+          <div style="flex:1;min-width:180px">
+            <label>Search merchant / description</label>
+            <input class="filter-input" style="width:100%" type="text" id="tx-search" placeholder="e.g. Netflix, Spotify…" oninput="filterTransactions()">
+          </div>
+          <div>
+            <label>Date from</label>
+            <input class="filter-input" type="date" id="tx-date-from" onchange="filterTransactions()">
+          </div>
+          <div>
+            <label>Date to</label>
+            <input class="filter-input" type="date" id="tx-date-to" onchange="filterTransactions()">
+          </div>
+          <button class="btn" onclick="clearTxFilters()">Clear</button>
+        </div>
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Recent transactions</div></div>
+          <div class="panel-head">
+            <div class="panel-title">All transactions</div>
+            <div class="panel-action" id="tx-count">{{ $transactions->count() }} records</div>
+          </div>
+          <div id="tx-list">
           @forelse ($transactions as $tx)
           @php $initials = strtoupper(substr($tx->merchant_name ?? 'UN', 0, 2)); @endphp
-          <div class="sub-row">
+          <div class="sub-row tx-row"
+               data-merchant="{{ strtolower($tx->merchant_name ?? '') }}"
+               data-desc="{{ strtolower($tx->description ?? '') }}"
+               data-date="{{ $tx->transaction_date }}">
             <div class="sub-logo" style="background:#f3f4f6;color:#374151">{{ $initials }}</div>
             <div class="sub-info">
               <div class="sub-name">{{ $tx->merchant_name ?? 'Unknown' }}</div>
-              <div class="sub-meta">{{ \Carbon\Carbon::parse($tx->transaction_date)->format('M j, Y') }}{{ $tx->description ? ' · ' . Str::limit($tx->description, 40) : '' }}</div>
+              <div class="sub-meta">{{ \Carbon\Carbon::parse($tx->transaction_date)->format('M j, Y') }}{{ $tx->description ? ' · ' . Str::limit($tx->description, 50) : '' }}</div>
             </div>
             <div class="sub-right">
               <div class="sub-amount" style="color:{{ $tx->amount < 0 ? '#dc2626' : '#059669' }}">
@@ -505,7 +569,126 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           @empty
           <div class="empty-state">No transactions yet.<br>Import a CSV to get started.</div>
           @endforelse
+          </div>
+          <div id="tx-empty" style="display:none" class="empty-state">No transactions match your filters.</div>
         </div>
+      </div>
+    </div>
+
+    <!-- MERCHANTS -->
+    <div id="page-merchants" style="display:none;">
+      <div class="topbar"><div class="page-title">Merchants</div></div>
+      <div class="content">
+        <div class="filter-bar">
+          <div style="flex:1;min-width:200px">
+            <label>Search merchants</label>
+            <input class="filter-input" style="width:100%" type="text" id="merchant-search" placeholder="e.g. Netflix…" oninput="filterMerchants()">
+          </div>
+          <button class="btn" onclick="clearMerchantFilters()">Clear</button>
+        </div>
+        <div class="panel">
+          <table class="merchant-table">
+            <thead>
+              <tr>
+                <th>Merchant</th>
+                <th>Canonical Name</th>
+                <th style="text-align:right">Transactions</th>
+              </tr>
+            </thead>
+            <tbody id="merchant-list">
+              @forelse ($merchants as $merchant)
+              <tr class="merchant-row" data-name="{{ strtolower($merchant->name) }}" data-canonical="{{ strtolower($merchant->canonical_name ?? '') }}">
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div class="sub-logo" style="background:#eff6ff;color:#1d4ed8;width:28px;height:28px;font-size:10px">
+                      {{ strtoupper(substr($merchant->name, 0, 2)) }}
+                    </div>
+                    <span style="font-weight:500;color:#111827">{{ $merchant->name }}</span>
+                  </div>
+                </td>
+                <td style="color:#6b7280">{{ $merchant->canonical_name ?? '—' }}</td>
+                <td style="text-align:right">
+                  <span style="background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">
+                    {{ number_format($merchant->transactions_count) }}
+                  </span>
+                </td>
+              </tr>
+              @empty
+              <tr><td colspan="3" class="empty-state">No merchants yet. Import a CSV to populate merchants.</td></tr>
+              @endforelse
+            </tbody>
+          </table>
+          <div id="merchant-empty" style="display:none" class="empty-state">No merchants match your search.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="page-profile" style="display:none;">
+      <div class="topbar"><div class="page-title">Profile</div></div>
+      <div class="content" style="max-width:560px">
+
+        @if (session('status') === 'profile-updated')
+          <div class="profile-success">Profile updated successfully.</div>
+        @endif
+
+        <div class="profile-card">
+          <h3>Profile Information</h3>
+          <form method="POST" action="{{ route('profile.update') }}">
+            @csrf
+            @method('PATCH')
+            <div class="profile-field">
+              <label class="profile-label">Full name</label>
+              <input class="profile-input" type="text" name="name" value="{{ old('name', Auth::user()->name) }}" required>
+              @error('name') <div class="profile-error">{{ $message }}</div> @enderror
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">Email address</label>
+              <input class="profile-input" type="email" name="email" value="{{ old('email', Auth::user()->email) }}" required>
+              @error('email') <div class="profile-error">{{ $message }}</div> @enderror
+            </div>
+            <button type="submit" class="btn primary" style="margin-top:4px">Save changes</button>
+          </form>
+        </div>
+
+        <div class="profile-card">
+          <h3>Update Password</h3>
+          <form method="POST" action="{{ route('password.update') }}">
+            @csrf
+            @method('PUT')
+            <div class="profile-field">
+              <label class="profile-label">Current password</label>
+              <input class="profile-input" type="password" name="current_password" autocomplete="current-password">
+              @error('current_password', 'updatePassword') <div class="profile-error">{{ $message }}</div> @enderror
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">New password</label>
+              <input class="profile-input" type="password" name="password" autocomplete="new-password">
+              @error('password', 'updatePassword') <div class="profile-error">{{ $message }}</div> @enderror
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">Confirm new password</label>
+              <input class="profile-input" type="password" name="password_confirmation" autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn primary" style="margin-top:4px">Update password</button>
+          </form>
+        </div>
+
+        <div class="profile-danger">
+          <h3>Delete Account</h3>
+          <p>Once your account is deleted, all data will be permanently removed. This action cannot be undone.</p>
+          <form method="POST" action="{{ route('profile.destroy') }}">
+            @csrf
+            @method('DELETE')
+            <div class="profile-field">
+              <label class="profile-label">Enter your password to confirm</label>
+              <input class="profile-input" type="password" name="password" placeholder="••••••••">
+              @error('password', 'userDeletion') <div class="profile-error">{{ $message }}</div> @enderror
+            </div>
+            <button type="submit" class="btn" style="border-color:#ef4444;color:#ef4444;margin-top:4px" onclick="return confirm('Delete your account permanently?')">Delete Account</button>
+          </form>
+        </div>
+
       </div>
     </div>
 
@@ -543,7 +726,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 
 <script>
-var pages = ['dashboard','detected','alerts','reports','import','transactions','subscriptions'];
+var pages = ['dashboard','detected','alerts','reports','import','transactions','subscriptions','merchants','profile'];
 
 function setPage(name) {
   for (var i = 0; i < pages.length; i++) {
@@ -595,14 +778,76 @@ if (importForm) {
   });
 }
 
+// Transaction filters
+function filterTransactions() {
+  var search = document.getElementById('tx-search').value.toLowerCase();
+  var dateFrom = document.getElementById('tx-date-from').value;
+  var dateTo = document.getElementById('tx-date-to').value;
+  var rows = document.querySelectorAll('.tx-row');
+  var visible = 0;
+  rows.forEach(function(row) {
+    var merchant = row.dataset.merchant || '';
+    var desc = row.dataset.desc || '';
+    var date = row.dataset.date || '';
+    var matchSearch = !search || merchant.includes(search) || desc.includes(search);
+    var matchFrom = !dateFrom || date >= dateFrom;
+    var matchTo = !dateTo || date <= dateTo;
+    var show = matchSearch && matchFrom && matchTo;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  var countEl = document.getElementById('tx-count');
+  if (countEl) countEl.textContent = visible + ' records';
+  var emptyEl = document.getElementById('tx-empty');
+  if (emptyEl) emptyEl.style.display = visible === 0 ? 'block' : 'none';
+}
+
+function clearTxFilters() {
+  document.getElementById('tx-search').value = '';
+  document.getElementById('tx-date-from').value = '';
+  document.getElementById('tx-date-to').value = '';
+  filterTransactions();
+}
+
+// Merchant filters
+function filterMerchants() {
+  var search = document.getElementById('merchant-search').value.toLowerCase();
+  var rows = document.querySelectorAll('.merchant-row');
+  var visible = 0;
+  rows.forEach(function(row) {
+    var name = row.dataset.name || '';
+    var canonical = row.dataset.canonical || '';
+    var show = !search || name.includes(search) || canonical.includes(search);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  var emptyEl = document.getElementById('merchant-empty');
+  if (emptyEl) emptyEl.style.display = visible === 0 ? 'block' : 'none';
+}
+
+function clearMerchantFilters() {
+  document.getElementById('merchant-search').value = '';
+  filterMerchants();
+}
+
+// Detect button loading state
+var detectForm = document.getElementById('detect-form');
+if (detectForm) {
+  detectForm.addEventListener('submit', function() {
+    var btn = document.getElementById('detect-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Running…';
+  });
+}
+
+// Auto-open profile page if profile was updated
+@if (session('status') === 'profile-updated')
+  setPage('profile');
+@endif
+
 // Auto-open import page if there are validation errors
 @if ($errors->any())
   setPage('import');
-@endif
-
-// Auto-open import page if redirected with success
-@if (session('success'))
-  // stay on dashboard but flash is visible
 @endif
 </script>
 

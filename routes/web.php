@@ -34,6 +34,9 @@ Route::middleware('auth')->group(function () {
 
     // Merchants
     Route::get('/merchants', [MerchantController::class, 'index'])->name('merchants.index');
+
+    // Run subscription detector
+    Route::post('/detect', [DashboardController::class, 'detect'])->name('detect');
 });
 
 require __DIR__.'/auth.php';
