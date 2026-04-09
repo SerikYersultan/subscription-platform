@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImportController;
-use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\MerchantController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 // Redirect home to dashboard

@@ -18,6 +18,7 @@ class FormsTest extends TestCase
     {
         $user = User::factory()->create();
         $this->actingAs($user);
+
         return $user;
     }
 
@@ -36,9 +37,9 @@ class FormsTest extends TestCase
     public function test_user_can_register(): void
     {
         $this->post('/register', [
-            'name'                  => 'Test User',
-            'email'                 => 'test@example.com',
-            'password'              => 'Password1!',
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
         ])->assertRedirect('/dashboard');
 
@@ -50,7 +51,7 @@ class FormsTest extends TestCase
         $user = User::factory()->create(['password' => bcrypt('Password1!')]);
 
         $this->post('/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'Password1!',
         ])->assertRedirect('/dashboard');
     }
@@ -66,7 +67,7 @@ class FormsTest extends TestCase
         $user = User::factory()->create();
 
         $this->post('/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'wrong-password',
         ])->assertSessionHasErrors();
     }
@@ -84,7 +85,7 @@ class FormsTest extends TestCase
         $user = $this->actingAsUser();
 
         $this->patch('/profile', [
-            'name'  => 'Updated Name',
+            'name' => 'Updated Name',
             'email' => $user->email,
         ])->assertSessionHasNoErrors()->assertRedirect('/profile');
 
@@ -96,7 +97,7 @@ class FormsTest extends TestCase
         $this->actingAsUser();
 
         $this->patch('/profile', [
-            'name'  => 'Test',
+            'name' => 'Test',
             'email' => 'not-an-email',
         ])->assertSessionHasErrors(['email']);
     }
@@ -106,12 +107,12 @@ class FormsTest extends TestCase
     public function test_import_page_renders(): void
     {
         $this->actingAsUser();
-        $this->get('/import')->assertStatus(200)->assertSee('Upload');
+        // /import now redirects to /dashboard where the import UI lives
+        $this->get('/import')->assertRedirect('/dashboard');
     }
 
     public function test_import_accepts_valid_csv(): void
     {
-        Storage::fake('local');
         $this->actingAsUser();
 
         $file = UploadedFile::fake()->createWithContent(
@@ -120,10 +121,13 @@ class FormsTest extends TestCase
         );
 
         $this->post('/import', ['csv_file' => $file])
-             ->assertRedirect('/import')
-             ->assertSessionHas('success');
+            ->assertRedirect('/dashboard')
+            ->assertSessionHas('success');
 
-        Storage::disk('local')->assertExists('imports/' . $file->hashName());
+        $this->assertDatabaseHas('transactions', [
+            'merchant_name' => 'Netflix',
+            'amount' => '9.99',
+        ]);
     }
 
     public function test_import_rejects_missing_file(): void
@@ -135,10 +139,10 @@ class FormsTest extends TestCase
     public function test_import_rejects_non_csv_file(): void
     {
         $this->actingAsUser();
-        $file = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+        $file = UploadedFile::fake()->create('document.jpg', 100, 'image/jpeg');
 
         $this->post('/import', ['csv_file' => $file])
-             ->assertSessionHasErrors(['csv_file']);
+            ->assertSessionHasErrors(['csv_file']);
     }
 
     public function test_import_rejects_oversized_file(): void
@@ -147,7 +151,7 @@ class FormsTest extends TestCase
         $file = UploadedFile::fake()->create('big.csv', 11000); // 11 MB > 10 MB limit
 
         $this->post('/import', ['csv_file' => $file])
-             ->assertSessionHasErrors(['csv_file']);
+            ->assertSessionHasErrors(['csv_file']);
     }
 
     // ── Transactions page ─────────────────────────────────────────────────────
@@ -162,7 +166,7 @@ class FormsTest extends TestCase
     {
         $this->actingAsUser();
         $this->get('/transactions?search=Netflix&date_from=2024-01-01&date_to=2024-12-31')
-             ->assertStatus(200);
+            ->assertStatus(200);
     }
 
     // ── Merchants page ────────────────────────────────────────────────────────

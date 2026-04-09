@@ -25,7 +25,7 @@
             @endif
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 class="font-semibold text-gray-800 text-lg mb-1">Upload a CSV File</h3>
+                <h3 class="font-semibold text-gray-800 text-lg mb-1">Upload a CSV or PDF File</h3>
                 <p class="text-sm text-gray-500 mb-6">
                     The file should contain transaction records. Supported format:
                     <code class="bg-gray-100 rounded px-1">date, amount, merchant, description</code>
@@ -40,11 +40,11 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>
                             <p class="text-sm font-medium" id="drop-label">
-                                <span class="underline">Click to browse</span> or drag & drop your CSV here
+                                <span class="underline">Click to browse</span> or drag & drop your CSV or PDF here
                             </p>
-                            <p class="text-xs text-gray-400">CSV only, max 10 MB</p>
+                            <p class="text-xs text-gray-400">CSV, TXT, or PDF — max 10 MB</p>
                         </div>
-                        <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt" class="hidden" onchange="updateLabel(this)">
+                        <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt,.pdf" class="hidden" onchange="updateLabel(this)">
                     </label>
 
                     @error('csv_file')

@@ -15,6 +15,7 @@ class Transaction extends Model
         'amount',
         'currency',
         'transaction_date',
+        'source_hash',
     ];
 
     protected function casts(): array

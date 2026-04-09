@@ -12,10 +12,10 @@ class SubscriptionDetectorService
 {
     // Cycle definitions: name => [expected days, tolerance days]
     private const CYCLES = [
-        'weekly'    => ['days' => 7,   'tolerance' => 3],
-        'monthly'   => ['days' => 30,  'tolerance' => 3],
+        'weekly' => ['days' => 7,   'tolerance' => 3],
+        'monthly' => ['days' => 30,  'tolerance' => 3],
         'quarterly' => ['days' => 90,  'tolerance' => 5],
-        'yearly'    => ['days' => 365, 'tolerance' => 5],
+        'yearly' => ['days' => 365, 'tolerance' => 5],
     ];
 
     public function detect(int $userId): Collection
@@ -50,7 +50,7 @@ class SubscriptionDetectorService
             $merchant = Merchant::firstOrCreate(
                 [
                     'user_id' => $userId,
-                    'name'    => $txGroup->first()->merchant_name,
+                    'name' => $txGroup->first()->merchant_name,
                 ],
                 [
                     'canonical_name' => $merchantKey,
@@ -62,18 +62,18 @@ class SubscriptionDetectorService
 
             $subscription = Subscription::updateOrCreate(
                 [
-                    'user_id'     => $userId,
+                    'user_id' => $userId,
                     'merchant_id' => $merchant->id,
                     'billing_cycle' => $cycle,
                 ],
                 [
-                    'name'             => $merchant->canonical_name ?? $merchant->name,
-                    'amount'           => $amount,
-                    'currency'         => $txGroup->first()->currency ?? 'USD',
-                    'status'           => 'active',
+                    'name' => $merchant->canonical_name ?? $merchant->name,
+                    'amount' => $amount,
+                    'currency' => $txGroup->first()->currency ?? 'USD',
+                    'status' => 'active',
                     'confidence_score' => $confidence,
                     'next_billing_date' => $nextBillingDate,
-                    'detected_at'      => now(),
+                    'detected_at' => now(),
                 ]
             );
 
@@ -155,10 +155,10 @@ class SubscriptionDetectorService
         $lastDate = $sorted->last()->transaction_date;
 
         return [
-            'cycle'      => $detectedCycle,
+            'cycle' => $detectedCycle,
             'confidence' => min(100, $confidence),
-            'amount'     => (float) $amountMode,
-            'lastDate'   => $lastDate,
+            'amount' => (float) $amountMode,
+            'lastDate' => $lastDate,
         ];
     }
 

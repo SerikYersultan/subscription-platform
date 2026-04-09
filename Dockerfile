@@ -42,32 +42,32 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     intl \
     opcache
 
-# Install Composer
+# Загрузка и установка Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first for layer caching
+# копируем только файлы, необходимые для установки зависимостей
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Copy application source
+# копируем остальные файлы приложения
 COPY . .
 
-# Copy built frontend assets from Stage 1
+# копируем скомпилированные фронтенд-ассеты из первого этапа
 COPY --from=frontend /app/public/build public/build
 
-# Finish composer setup
+# запускаем оптимизацию автозагрузчика после копирования всех файлов, чтобы учесть все классы
 RUN composer dump-autoload --optimize
 
-# Storage & bootstrap cache directories
+# хранение и права доступа
 RUN mkdir -p storage/framework/{sessions,views,cache} \
              storage/logs \
              bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache
 
-# Copy config files
+# Cконфигурируем nginx и supervisor
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/app.ini

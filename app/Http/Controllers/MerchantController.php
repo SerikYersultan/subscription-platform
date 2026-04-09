@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Merchant;
+use Illuminate\Http\Request;
 
 class MerchantController extends Controller
 {
@@ -18,13 +18,13 @@ class MerchantController extends Controller
             // Поиск по имени
             if ($search = $request->input('search')) {
                 $query->where('canonical_name', 'like', "%{$search}%")
-                      ->orWhere('name', 'like', "%{$search}%");
+                    ->orWhere('name', 'like', "%{$search}%");
             }
 
             $merchants = $query->withCount('transactions')
-                               ->orderBy('canonical_name')
-                               ->paginate(20)
-                               ->withQueryString();
+                ->orderBy('canonical_name')
+                ->paginate(20)
+                ->withQueryString();
 
             $isEmpty = $merchants->isEmpty();
 

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Transaction;
+use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
@@ -19,7 +19,7 @@ class TransactionController extends Controller
             if ($search = $request->input('search')) {
                 $query->where(function ($q) use ($search) {
                     $q->where('merchant_name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             }
 
