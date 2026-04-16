@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,8 +36,13 @@ Route::middleware('auth')->group(function () {
     // Merchants
     Route::get('/merchants', [MerchantController::class, 'index'])->name('merchants.index');
 
-    // Run subscription detector
+    // Run subscription detector (re-scan)
     Route::post('/detect', [DashboardController::class, 'detect'])->name('detect');
+
+    // Subscription confirmation & editing
+    Route::post('/subscriptions/{subscription}/confirm', [SubscriptionController::class, 'confirm'])->name('subscriptions.confirm');
+    Route::patch('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
+    Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
 });
 
 require __DIR__.'/auth.php';

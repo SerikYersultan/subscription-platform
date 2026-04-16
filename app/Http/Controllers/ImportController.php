@@ -10,7 +10,6 @@ class ImportController extends Controller
 {
     public function index()
     {
-        // Import UI lives inside the dashboard SPA
         return redirect()->route('dashboard');
     }
 
@@ -44,7 +43,6 @@ class ImportController extends Controller
             $result = $this->importFromCsv($lines);
         }
 
-        // Nothing usable at all
         if ($result['imported'] === 0 && $result['duplicates'] === 0) {
             return back()
                 ->withErrors(['csv_file' => 'No valid transactions found. For PDF: Kaspi Bank statement required. For CSV: columns must be date, amount, merchant, description.'])
@@ -65,12 +63,6 @@ class ImportController extends Controller
             ->with('success', 'Import complete: ' . implode(', ', $parts) . '.');
     }
 
-    // ── Bank statement (PDF) ─────────────────────────────────────────────────
-
-    /**
-     * Parse a Kaspi Bank (or similar) statement.
-     * Expected line format: DD.MM.YY  +/-  1 234,56 ₸  Type  Details
-     */
     private function importFromBankStatement(string $text): array
     {
         $userId = auth()->id();
@@ -80,7 +72,7 @@ class ImportController extends Controller
             $row = $this->parseBankStatementLine($line);
 
             if ($row === null) {
-                continue; // header / summary / non-transaction line — not counted as skipped
+                continue;
             }
 
             if (! $this->isValidRow($row['transaction_date'], $row['amount'], $row['merchant_name'])) {
@@ -108,11 +100,6 @@ class ImportController extends Controller
         return compact('imported', 'duplicates', 'skipped');
     }
 
-    /**
-     * Parse one line of a Kaspi bank statement.
-     * Returns null for lines that are not transaction rows.
-     * Example: "09.04.26 - 2 310,00 ₸ Purchases YANDEX.GO"
-     */
     private function parseBankStatementLine(string $line): ?array
     {
         $pattern = '/^(\d{2}\.\d{2}\.\d{2})\s+([-+])\s*([\d\s]+,\d+)\s*\S*\s+'
@@ -124,11 +111,9 @@ class ImportController extends Controller
 
         [, $rawDate, $sign, $rawAmount, $type, $details] = $m;
 
-        // DD.MM.YY → 20YY-MM-DD
         [$day, $month, $year] = explode('.', $rawDate);
         $date = '20' . $year . '-' . $month . '-' . $day;
 
-        // "2 310,00" → 2310.00  (space = thousands sep, comma = decimal sep)
         $amount = (float) str_replace([' ', ','], ['', '.'], trim($rawAmount));
         if ($sign === '-') {
             $amount = -$amount;
@@ -142,12 +127,6 @@ class ImportController extends Controller
         ];
     }
 
-    // ── CSV / TXT ────────────────────────────────────────────────────────────
-
-    /**
-     * Parse a plain CSV/TXT file.
-     * Expected columns: date, amount, merchant, description
-     */
     private function importFromCsv(array $lines): array
     {
         $userId = auth()->id();
@@ -161,7 +140,6 @@ class ImportController extends Controller
                 continue;
             }
 
-            // Skip header row (any row whose first column contains non-numeric text like "date")
             if (! $headerSkipped && preg_match('/^\s*date\b|^\s*[a-z_\-]+\s*,/i', $line)) {
                 $headerSkipped = true;
                 continue;
@@ -177,13 +155,9 @@ class ImportController extends Controller
             [$rawDate, $rawAmount, $merchant] = $cols;
             $description = $cols[3] ?? null;
 
-            // Parse date — accepts many formats via PHP
             $date = date_create(trim($rawDate));
 
-            // Parse amount — strip currency symbols, thousands separators;
-            // use a more precise pattern to avoid "-" in unexpected positions
             $cleanAmount = preg_replace('/[^0-9.,]/', '', $rawAmount);
-            // Normalise: if comma is decimal separator (e.g. "1.234,56"), keep only last separator
             if (preg_match('/,\d{1,2}$/', $cleanAmount)) {
                 $cleanAmount = str_replace(['.', ','], ['', '.'], $cleanAmount);
             } else {
@@ -191,7 +165,6 @@ class ImportController extends Controller
             }
             $amount = (float) $cleanAmount;
 
-            // Restore sign lost during cleaning
             if (str_starts_with(trim($rawAmount), '-')) {
                 $amount = -abs($amount);
             }
@@ -226,16 +199,6 @@ class ImportController extends Controller
         return compact('imported', 'duplicates', 'skipped');
     }
 
-    // ── Shared helpers ───────────────────────────────────────────────────────
-
-    /**
-     * Validate a parsed row before storing.
-     *
-     * Rules:
-     *  - Date must be parseable and between 2000-01-01 and one year from today.
-     *  - Amount must be non-zero and ≤ 10 000 000 in absolute value.
-     *  - Merchant name must be non-empty.
-     */
     private function isValidRow(string $date, float $amount, string $merchant): bool
     {
         $d = \DateTime::createFromFormat('Y-m-d', $date);
@@ -260,10 +223,6 @@ class ImportController extends Controller
         return true;
     }
 
-    /**
-     * Compute a deduplication fingerprint for a transaction row.
-     * Hash is MD5 of: user_id | date | amount | lowercase merchant.
-     */
     private function makeHash(int $userId, string $date, float $amount, string $merchant): string
     {
         return md5($userId . '|' . $date . '|' . $amount . '|' . mb_strtolower(trim($merchant)));

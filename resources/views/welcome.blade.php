@@ -267,13 +267,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="topbar-actions">
           <button class="btn" onclick="setPage('import')">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 10V3M5 7l3 3 3-3M3 13h10"/></svg>
-            Import CSV
+            Import
           </button>
+          @if ($subscriptions->isNotEmpty() || $detected->isNotEmpty())
+          <button class="btn" onclick="setPage('detected')" style="position:relative">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v2M8 11v2M3 8H1M15 8h-2M5.05 5.05 3.64 3.64M12.36 12.36l-1.41-1.41M10.95 5.05l1.41-1.41M3.64 12.36l1.41-1.41" stroke-linecap="round"/></svg>
+            Review Detections
+            @if ($detected->count() > 0)
+            <span style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:9999px;font-size:10px;font-weight:700;padding:1px 5px;line-height:16px">{{ $detected->count() }}</span>
+            @endif
+          </button>
+          @endif
           <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form">
             @csrf
             <button type="submit" class="btn primary" id="detect-btn">
-              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="m11 11 3 3" stroke-linecap="round"/></svg>
-              Run Detector
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><path d="M13 8A5 5 0 1 1 8 3" stroke-linecap="round"/><path d="M13 3v3h-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-scan
             </button>
           </form>
         </div>
@@ -396,31 +405,86 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
     </div>
 
-    <!-- DETECTED -->
+    <!-- DETECTED / CONFIRMATION -->
     <div id="page-detected" style="display:none;">
-      <div class="topbar"><div class="page-title">Unconfirmed detections</div></div>
+      <div class="topbar">
+        <div class="page-title">Review detections</div>
+        <div class="topbar-actions">
+          <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form-det">
+            @csrf
+            <button type="submit" class="btn primary" id="detect-btn-det">
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><path d="M13 8A5 5 0 1 1 8 3" stroke-linecap="round"/><path d="M13 3v3h-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-scan
+            </button>
+          </form>
+        </div>
+      </div>
       <div class="content">
-        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">The detection engine found these recurring patterns. Confidence score below 80%.</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">The detection engine found these recurring patterns. Confirm the ones that are real subscriptions, edit if the details are wrong, or remove false positives.</p>
         <div class="panel">
           @forelse ($detected as $sub)
           @php
             $initials = strtoupper(substr($sub->name, 0, 2));
-            $confColor = $sub->confidence_score >= 60 ? '#16a34a' : '#d97706';
+            $conf = (int) $sub->confidence_score;
+            $confColor = $conf >= 75 ? '#16a34a' : ($conf >= 55 ? '#d97706' : '#dc2626');
           @endphp
-          <div class="sub-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <div class="sub-row" style="flex-direction:column;align-items:stretch;gap:12px;padding:16px;">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div class="sub-logo" style="background:#f0fdf4;color:#16a34a">{{ $initials }}</div>
-              <div style="flex:1">
-                <div style="font-size:13px;font-weight:500;color:#111827">{{ $sub->name }}</div>
-                <div style="font-size:11px;color:#6b7280;margin-top:2px">{{ ucfirst($sub->billing_cycle) }} ${{ number_format($sub->amount, 2) }}{{ $sub->next_billing_date ? ' - Next ' . \Carbon\Carbon::parse($sub->next_billing_date)->format('M j') : '' }}</div>
+              <div class="sub-logo" style="background:#f0fdf4;color:#16a34a;flex-shrink:0">{{ $initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:#111827">{{ $sub->name }}</div>
+                <div style="font-size:11px;color:#6b7280;margin-top:2px">
+                  {{ ucfirst($sub->billing_cycle) }} &middot;
+                  {{ number_format(abs($sub->amount), 2) }} {{ $sub->currency }}
+                  {{ $sub->next_billing_date ? ' &middot; Next ' . \Carbon\Carbon::parse($sub->next_billing_date)->format('M j, Y') : '' }}
+                </div>
+              </div>
+              <div style="flex-shrink:0;text-align:right">
+                <div style="font-size:11px;color:#6b7280;margin-bottom:4px">Confidence</div>
+                <div style="font-size:15px;font-weight:700;color:{{ $confColor }}">{{ $conf }}%</div>
               </div>
             </div>
-            <div style="background:#f9fafb;border-radius:6px;padding:8px 12px;font-size:11px;color:#6b7280">
-              Confidence: <strong style="color:{{ $confColor }}">{{ number_format($sub->confidence_score) }}%</strong> - {{ ucfirst($sub->billing_cycle) }} cadence detected
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              {{-- Confirm --}}
+              <form method="POST" action="{{ route('subscriptions.confirm', $sub) }}" style="display:inline">
+                @csrf
+                <button type="submit" class="btn primary" style="font-size:12px;padding:6px 14px">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><path d="M3 8l4 4 6-6"/></svg>
+                  Confirm
+                </button>
+              </form>
+
+              {{-- Edit --}}
+              <button type="button" class="btn" style="font-size:12px;padding:6px 14px"
+                onclick="openEditModal(
+                  {{ $sub->id }},
+                  {{ json_encode($sub->name) }},
+                  {{ json_encode(number_format(abs($sub->amount), 2, '.', '')) }},
+                  {{ json_encode($sub->billing_cycle) }},
+                  {{ json_encode($sub->currency) }}
+                )">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 2l3 3-8 8H3v-3L11 2z"/></svg>
+                Edit &amp; Confirm
+              </button>
+
+              {{-- Remove --}}
+              <form method="POST" action="{{ route('subscriptions.destroy', $sub) }}" style="display:inline"
+                onsubmit="return confirm('Remove &quot;{{ addslashes($sub->name) }}&quot;? This cannot be undone.')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn" style="font-size:12px;padding:6px 14px;color:#dc2626;border-color:#fecaca">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"><path d="M3 5h10M8 5V3M6 5v7M10 5v7M4 5l1 8h6l1-8"/></svg>
+                  Remove
+                </button>
+              </form>
             </div>
           </div>
           @empty
-          <div class="empty-state">No unconfirmed detections. Import a CSV to start detection.</div>
+          <div class="empty-state">
+            No unconfirmed detections.<br>
+            <span style="font-size:12px;color:#9ca3af">Run <strong>Re-scan</strong> after importing transactions to detect recurring charges.</span>
+          </div>
           @endforelse
         </div>
       </div>
@@ -864,7 +928,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
     <!-- SUBSCRIPTIONS -->
     <div id="page-subscriptions" style="display:none;">
-      <div class="topbar"><div class="page-title">All subscriptions</div></div>
+      <div class="topbar">
+        <div class="page-title">All subscriptions</div>
+        <div class="topbar-actions">
+          <button class="btn" onclick="setPage('detected')" style="position:relative">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v2M8 11v2M3 8H1M15 8h-2M5.05 5.05 3.64 3.64M12.36 12.36l-1.41-1.41M10.95 5.05l1.41-1.41M3.64 12.36l1.41-1.41" stroke-linecap="round"/></svg>
+            Review Detections
+            @if ($detected->count() > 0)
+            <span style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:9999px;font-size:10px;font-weight:700;padding:1px 5px;line-height:16px">{{ $detected->count() }}</span>
+            @endif
+          </button>
+          <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form-subs">
+            @csrf
+            <button type="submit" class="btn primary" id="detect-btn-subs">
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><path d="M13 8A5 5 0 1 1 8 3" stroke-linecap="round"/><path d="M13 3v3h-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-scan
+            </button>
+          </form>
+        </div>
+      </div>
       <div class="content">
         <div class="panel">
           @forelse ($subscriptions as $sub)
@@ -891,6 +973,73 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         </div>
       </div>
     </div>
+
+  </div>
+</div>
+
+<!-- EDIT SUBSCRIPTION MODAL -->
+<div id="edit-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center" onclick="closeEditModal(event)">
+  <div style="background:#fff;border-radius:12px;width:100%;max-width:440px;margin:0 16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+
+    <div style="padding:20px 24px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:15px;font-weight:700;color:#111827">Edit subscription</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;line-height:1">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3 3 13"/></svg>
+      </button>
+    </div>
+
+    <form id="edit-modal-form" method="POST" style="padding:20px 24px 24px">
+      @csrf
+      @method('PATCH')
+
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Service name</label>
+        <input id="edit-name" name="name" type="text" required maxlength="255"
+          style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#111827;box-sizing:border-box;outline:none"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d1d5db'">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Amount</label>
+          <input id="edit-amount" name="amount" type="number" step="0.01" min="0" required
+            style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#111827;box-sizing:border-box;outline:none"
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d1d5db'">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Currency</label>
+          <input id="edit-currency" name="currency" type="text" maxlength="3" required
+            style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#111827;box-sizing:border-box;outline:none;text-transform:uppercase"
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d1d5db'">
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Billing cycle</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="edit-cycle-btns">
+          @foreach(['weekly','monthly','quarterly','yearly'] as $cycle)
+          <label style="cursor:pointer">
+            <input type="radio" name="billing_cycle" value="{{ $cycle }}" style="display:none" class="cycle-radio">
+            <div class="cycle-option" data-val="{{ $cycle }}"
+              style="text-align:center;padding:8px 4px;border:1px solid #d1d5db;border-radius:8px;font-size:11px;font-weight:600;color:#374151;transition:all .15s;user-select:none">
+              {{ ucfirst($cycle) }}
+            </div>
+          </label>
+          @endforeach
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button type="button" onclick="closeEditModal()"
+          style="flex:1;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;font-weight:600;color:#374151;cursor:pointer">
+          Cancel
+        </button>
+        <button type="submit"
+          style="flex:2;padding:10px;border:none;border-radius:8px;background:#1a56db;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          Save &amp; Confirm
+        </button>
+      </div>
+    </form>
 
   </div>
 </div>
@@ -1013,15 +1162,74 @@ function clearMerchantFilters() {
   filterMerchants();
 }
 
-// Detect button loading state
-var detectForm = document.getElementById('detect-form');
-if (detectForm) {
-  detectForm.addEventListener('submit', function() {
-    var btn = document.getElementById('detect-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Running…';
+// Detect / re-scan loading state for all three forms
+['detect-form','detect-form-subs','detect-form-det'].forEach(function(id) {
+  var form = document.getElementById(id);
+  if (!form) return;
+  form.addEventListener('submit', function() {
+    form.querySelectorAll('button[type=submit]').forEach(function(btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Scanning…';
+    });
   });
+});
+
+// Edit subscription modal
+var baseUpdateUrl = '{{ url('/subscriptions') }}/';
+
+function openEditModal(id, name, amount, cycle, currency) {
+  var form = document.getElementById('edit-modal-form');
+  form.action = baseUpdateUrl + id;
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-amount').value = amount;
+  document.getElementById('edit-currency').value = currency;
+
+  // cycle radio buttons visual state
+  document.querySelectorAll('.cycle-radio').forEach(function(radio) {
+    radio.checked = radio.value === cycle;
+  });
+  document.querySelectorAll('.cycle-option').forEach(function(opt) {
+    var active = opt.dataset.val === cycle;
+    opt.style.background = active ? '#eff6ff' : '#fff';
+    opt.style.borderColor = active ? '#1a56db' : '#d1d5db';
+    opt.style.color = active ? '#1a56db' : '#374151';
+  });
+
+  var backdrop = document.getElementById('edit-modal-backdrop');
+  backdrop.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(function() { document.getElementById('edit-name').focus(); }, 50);
 }
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('edit-modal-backdrop')) return;
+  document.getElementById('edit-modal-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Cycle option click styling
+document.querySelectorAll('.cycle-option').forEach(function(opt) {
+  opt.addEventListener('click', function() {
+    var val = opt.dataset.val;
+    document.querySelectorAll('.cycle-option').forEach(function(o) {
+      var active = o.dataset.val === val;
+      o.style.background = active ? '#eff6ff' : '#fff';
+      o.style.borderColor = active ? '#1a56db' : '#d1d5db';
+      o.style.color = active ? '#1a56db' : '#374151';
+    });
+    document.querySelectorAll('.cycle-radio').forEach(function(r) {
+      r.checked = r.value === val;
+    });
+  });
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('edit-modal-backdrop').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+});
 
 // Auto-open correct page based on session or errors
 @if (session('status') === 'profile-updated')
