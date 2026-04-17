@@ -49,7 +49,7 @@
                             </tr>
                             @endforeach
                         </tbody>
-                    能得到
+                    No recent alerts
                 </div>
                 @endif
                 
