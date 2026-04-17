@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany; // Добавьте это
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // Добавьте это
 
 class Subscription extends Model
 {
@@ -19,16 +21,12 @@ class Subscription extends Model
         'amount' => 'decimal:2',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function alerts()
-    {
-        return $this->hasMany(Alert::class);
-    }
-
+    // Оставляем ТОЛЬКО этот метод (с типизацией)
     public function alerts(): HasMany
     {
         return $this->hasMany(Alert::class);
