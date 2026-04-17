@@ -232,7 +232,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
       <div class="nav-item" onclick="setPage('import')">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 10V3M5 7l3 3 3-3M3 13h10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-        Import CSV
+        Import
       </div>
       <div class="nav-section">Account</div>
       <div class="nav-item" onclick="setPage('profile')">
@@ -267,13 +267,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="topbar-actions">
           <button class="btn" onclick="setPage('import')">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 10V3M5 7l3 3 3-3M3 13h10"/></svg>
-            Import CSV
+            Import
           </button>
+          @if ($subscriptions->isNotEmpty() || $detected->isNotEmpty())
+          <button class="btn" onclick="setPage('detected')" style="position:relative">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v2M8 11v2M3 8H1M15 8h-2M5.05 5.05 3.64 3.64M12.36 12.36l-1.41-1.41M10.95 5.05l1.41-1.41M3.64 12.36l1.41-1.41" stroke-linecap="round"/></svg>
+            Review Detections
+            @if ($detected->count() > 0)
+            <span style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:9999px;font-size:10px;font-weight:700;padding:1px 5px;line-height:16px">{{ $detected->count() }}</span>
+            @endif
+          </button>
+          @endif
           <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form">
             @csrf
             <button type="submit" class="btn primary" id="detect-btn">
-              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="m11 11 3 3" stroke-linecap="round"/></svg>
-              Run Detector
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><path d="M13 8A5 5 0 1 1 8 3" stroke-linecap="round"/><path d="M13 3v3h-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-scan
             </button>
           </form>
         </div>
@@ -282,6 +291,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
         @if (session('success'))
           <div class="flash-success">✅ {{ session('success') }}</div>
+        @endif
+
+        @if ($transactionCount > 0 && $subscriptions->isEmpty())
+        <div class="alert-strip" style="background:#eff6ff;border-color:#bfdbfe;cursor:default">
+          <div class="alert-dot" style="background:#1a56db"></div>
+          <div class="alert-text" style="color:#1e40af"><strong>{{ number_format($transactionCount) }} transactions imported.</strong> Click <strong>Run Detector</strong> above to find subscriptions and update statistics.</div>
+        </div>
         @endif
 
         @if ($unreadAlertsCount > 0)
@@ -308,8 +324,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           <div class="metric-card" onclick="setPage('transactions')">
             <div class="metric-icon icon-amber"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#d97706" stroke-width="1.2"><path d="M2 5h12M2 8h8M2 11h6"/></svg></div>
             <div class="metric-label">Transactions</div>
-            <div class="metric-value">{{ $transactions->count() }}</div>
-            <div class="metric-sub">recent records</div>
+            <div class="metric-value">{{ number_format($transactionCount) }}</div>
+            <div class="metric-sub">total records</div>
           </div>
           <div class="metric-card" onclick="setPage('detected')">
             <div class="metric-icon icon-red"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#dc2626" stroke-width="1.6"><circle cx="8" cy="8" r="5"/><path d="m5 5 6 6M11 5 5 11" stroke-linecap="round"/></svg></div>
@@ -389,31 +405,86 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
     </div>
 
-    <!-- DETECTED -->
+    <!-- DETECTED / CONFIRMATION -->
     <div id="page-detected" style="display:none;">
-      <div class="topbar"><div class="page-title">Unconfirmed detections</div></div>
+      <div class="topbar">
+        <div class="page-title">Review detections</div>
+        <div class="topbar-actions">
+          <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form-det">
+            @csrf
+            <button type="submit" class="btn primary" id="detect-btn-det">
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><path d="M13 8A5 5 0 1 1 8 3" stroke-linecap="round"/><path d="M13 3v3h-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-scan
+            </button>
+          </form>
+        </div>
+      </div>
       <div class="content">
-        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">The detection engine found these recurring patterns. Confidence score below 80%.</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">The detection engine found these recurring patterns. Confirm the ones that are real subscriptions, edit if the details are wrong, or remove false positives.</p>
         <div class="panel">
           @forelse ($detected as $sub)
           @php
             $initials = strtoupper(substr($sub->name, 0, 2));
-            $confColor = $sub->confidence_score >= 60 ? '#16a34a' : '#d97706';
+            $conf = (int) $sub->confidence_score;
+            $confColor = $conf >= 75 ? '#16a34a' : ($conf >= 55 ? '#d97706' : '#dc2626');
           @endphp
-          <div class="sub-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <div class="sub-row" style="flex-direction:column;align-items:stretch;gap:12px;padding:16px;">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div class="sub-logo" style="background:#f0fdf4;color:#16a34a">{{ $initials }}</div>
-              <div style="flex:1">
-                <div style="font-size:13px;font-weight:500;color:#111827">{{ $sub->name }}</div>
-                <div style="font-size:11px;color:#6b7280;margin-top:2px">{{ ucfirst($sub->billing_cycle) }} ${{ number_format($sub->amount, 2) }}{{ $sub->next_billing_date ? ' - Next ' . \Carbon\Carbon::parse($sub->next_billing_date)->format('M j') : '' }}</div>
+              <div class="sub-logo" style="background:#f0fdf4;color:#16a34a;flex-shrink:0">{{ $initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:#111827">{{ $sub->name }}</div>
+                <div style="font-size:11px;color:#6b7280;margin-top:2px">
+                  {{ ucfirst($sub->billing_cycle) }} &middot;
+                  {{ number_format(abs($sub->amount), 2) }} {{ $sub->currency }}
+                  {{ $sub->next_billing_date ? ' &middot; Next ' . \Carbon\Carbon::parse($sub->next_billing_date)->format('M j, Y') : '' }}
+                </div>
+              </div>
+              <div style="flex-shrink:0;text-align:right">
+                <div style="font-size:11px;color:#6b7280;margin-bottom:4px">Confidence</div>
+                <div style="font-size:15px;font-weight:700;color:{{ $confColor }}">{{ $conf }}%</div>
               </div>
             </div>
-            <div style="background:#f9fafb;border-radius:6px;padding:8px 12px;font-size:11px;color:#6b7280">
-              Confidence: <strong style="color:{{ $confColor }}">{{ number_format($sub->confidence_score) }}%</strong> - {{ ucfirst($sub->billing_cycle) }} cadence detected
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              {{-- Confirm --}}
+              <form method="POST" action="{{ route('subscriptions.confirm', $sub) }}" style="display:inline">
+                @csrf
+                <button type="submit" class="btn primary" style="font-size:12px;padding:6px 14px">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><path d="M3 8l4 4 6-6"/></svg>
+                  Confirm
+                </button>
+              </form>
+
+              {{-- Edit --}}
+              <button type="button" class="btn" style="font-size:12px;padding:6px 14px"
+                onclick="openEditModal(
+                  {{ $sub->id }},
+                  {{ json_encode($sub->name) }},
+                  {{ json_encode(number_format(abs($sub->amount), 2, '.', '')) }},
+                  {{ json_encode($sub->billing_cycle) }},
+                  {{ json_encode($sub->currency) }}
+                )">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 2l3 3-8 8H3v-3L11 2z"/></svg>
+                Edit &amp; Confirm
+              </button>
+
+              {{-- Remove --}}
+              <form method="POST" action="{{ route('subscriptions.destroy', $sub) }}" style="display:inline"
+                onsubmit="return confirm('Remove &quot;{{ addslashes($sub->name) }}&quot;? This cannot be undone.')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn" style="font-size:12px;padding:6px 14px;color:#dc2626;border-color:#fecaca">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"><path d="M3 5h10M8 5V3M6 5v7M10 5v7M4 5l1 8h6l1-8"/></svg>
+                  Remove
+                </button>
+              </form>
             </div>
           </div>
           @empty
-          <div class="empty-state">No unconfirmed detections. Import a CSV to start detection.</div>
+          <div class="empty-state">
+            No unconfirmed detections.<br>
+            <span style="font-size:12px;color:#9ca3af">Run <strong>Re-scan</strong> after importing transactions to detect recurring charges.</span>
+          </div>
           @endforelse
         </div>
       </div>
@@ -482,44 +553,201 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
     <!-- IMPORT -->
     <div id="page-import" style="display:none;">
-      <div class="topbar"><div class="page-title">Import CSV</div></div>
+      <div class="topbar">
+        <div class="page-title">Import Bank Statement</div>
+      </div>
       <div class="content">
-        @if ($errors->any())
-          <div class="flash-error">
-            @foreach ($errors->all() as $error)
-              <div>{{ $error }}</div>
-            @endforeach
+
+        {{-- ── Import result breakdown (shown after a successful import) ── --}}
+        @if (session('import_result') && session('open_page') === 'import')
+        @php $ir = session('import_result'); @endphp
+        <div style="border-radius:10px;border:1px solid {{ $ir['imported'] > 0 ? '#bbf7d0' : '#fde68a' }};background:{{ $ir['imported'] > 0 ? '#f0fdf4' : '#fffbeb' }};padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            @if($ir['imported'] > 0)
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#16a34a"/><path d="M6 10l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span style="font-size:13px;font-weight:600;color:#166534">Import complete</span>
+            @else
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f59e0b"/><path d="M10 6v4M10 13h.01" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span style="font-size:13px;font-weight:600;color:#92400e">Import complete</span>
+            @endif
           </div>
-        @endif
-        <div class="panel" style="max-width:480px;">
-          <div class="panel-head"><div class="panel-title">Upload bank export</div></div>
-          <form method="POST" action="{{ route('import.store') }}" enctype="multipart/form-data" id="import-form">
-            @csrf
-            <div style="padding:24px;text-align:center;border:2px dashed #d1d5db;margin:16px;border-radius:8px;cursor:pointer;transition:background 0.1s" id="drop-zone"
-                 onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
-              <div style="font-size:32px;margin-bottom:8px">📁</div>
-              <div style="font-size:13px;font-weight:500;color:#111827" id="drop-label">Drop your CSV file here or <span style="color:var(--brand);text-decoration:underline">click to browse</span></div>
-              <div style="font-size:11px;color:#6b7280;margin-top:4px">CSV only, max 10 MB</div>
-              <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt" style="display:none" onchange="updateImportLabel(this)">
+          <div style="display:flex;gap:20px;flex-wrap:wrap;flex:1">
+            {{-- Imported --}}
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;flex-shrink:0"></span>
+              <span style="font-size:12px;color:#374151"><strong style="color:#111827">{{ number_format($ir['imported']) }}</strong> imported</span>
             </div>
-            <div style="padding:0 16px 16px">
-              <button type="submit" class="btn primary" style="width:100%;justify-content:center" id="import-submit-btn">
-                📥 Upload &amp; Process
-              </button>
+            {{-- Duplicates --}}
+            @if($ir['duplicates'] > 0)
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
+              <span style="font-size:12px;color:#374151"><strong style="color:#111827">{{ number_format($ir['duplicates']) }}</strong> duplicates skipped</span>
             </div>
-          </form>
-        </div>
-        @if ($recentImports->isNotEmpty())
-        <div class="panel" style="max-width:480px;margin-top:16px;">
-          <div class="panel-head"><div class="panel-title">Recent imports</div></div>
-          @foreach ($recentImports as $import)
-          <div class="upcoming-row">
-            <div style="font-size:12px;color:#111827;flex:1">{{ \Carbon\Carbon::parse($import->import_date)->format('M j, Y') }}</div>
-            <div style="font-size:12px;font-weight:600;color:#1a56db">{{ number_format($import->total) }} transactions</div>
+            @endif
+            {{-- Invalid rows --}}
+            @if($ir['skipped'] > 0)
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>
+              <span style="font-size:12px;color:#374151"><strong style="color:#111827">{{ number_format($ir['skipped']) }}</strong> invalid rows skipped</span>
+            </div>
+            @endif
           </div>
-          @endforeach
         </div>
         @endif
+
+        {{-- ── Validation error ── --}}
+        @if ($errors->has('csv_file'))
+        <div class="flash-error" style="display:flex;align-items:flex-start;gap:8px">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;margin-top:1px"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 10.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM7.25 5h1.5v4.5h-1.5V5z"/></svg>
+          <span>{{ $errors->first('csv_file') }}</span>
+        </div>
+        @endif
+
+        <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start">
+
+          {{-- ── Upload panel ── --}}
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Upload file</div>
+              <span style="font-size:11px;color:#6b7280">PDF, CSV or TXT · max 10 MB</span>
+            </div>
+            <form method="POST" action="{{ route('import.store') }}" enctype="multipart/form-data" id="import-form">
+              @csrf
+              <div style="padding:20px">
+                <label for="csv_file" id="drop-zone"
+                  style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+                         height:164px;border:2px dashed #d1d5db;border-radius:10px;cursor:pointer;
+                         background:#fafafa;transition:background 0.12s,border-color 0.12s">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.4" stroke-linecap="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  <div style="text-align:center">
+                    <div style="font-size:13px;font-weight:500;color:#374151" id="drop-label">Click to browse or drag &amp; drop</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:3px">Kaspi Bank PDF, CSV or TXT</div>
+                  </div>
+                  <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt,.pdf" style="display:none" onchange="updateImportLabel(this)">
+                </label>
+
+                {{-- File preview after selection --}}
+                <div id="file-preview" style="display:none;margin-top:12px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;align-items:center;gap:10px">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span id="file-name" style="font-size:12px;font-weight:500;color:#1d4ed8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+                  <span id="file-size" style="font-size:11px;color:#3b82f6;flex-shrink:0"></span>
+                </div>
+
+                <button type="submit" class="btn primary" style="width:100%;justify-content:center;margin-top:14px;padding:9px 0;font-size:13px" id="import-submit-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Upload &amp; Import
+                </button>
+              </div>
+            </form>
+
+            {{-- ── Validation rules panel (Validate data feature) ── --}}
+            <div style="border-top:1px solid #f3f4f6;padding:14px 16px">
+              <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Validation rules</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="6" cy="6" r="5.5" stroke="#d1d5db"/><path d="M3.5 6l2 2 3-3" stroke="#10b981" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  Date must be between 2000-01-01 and one year from today
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="6" cy="6" r="5.5" stroke="#d1d5db"/><path d="M3.5 6l2 2 3-3" stroke="#10b981" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  Amount must be non-zero and ≤ 10,000,000
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="6" cy="6" r="5.5" stroke="#d1d5db"/><path d="M3.5 6l2 2 3-3" stroke="#10b981" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  Merchant name must not be empty
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="6" cy="6" r="5.5" stroke="#d1d5db"/><path d="M3.5 6l2 2 3-3" stroke="#10b981" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  Duplicate rows are detected and skipped automatically
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {{-- ── Right column ── --}}
+          <div style="display:flex;flex-direction:column;gap:14px">
+
+            {{-- Supported formats (Parse CSV feature) --}}
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Supported formats</div></div>
+              <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <div style="width:28px;height:28px;border-radius:6px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:#111827">Kaspi Bank PDF</div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5">
+                      Gold / Red statements.<br>
+                      <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">DD.MM.YY ± amount ₸ Type Merchant</code>
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <div style="width:28px;height:28px;border-radius:6px;background:#d1fae5;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:#111827">CSV / TXT</div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:2px">
+                      <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:10px">date, amount, merchant, description</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {{-- Data schema (Design DB schema feature) --}}
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Data schema</div></div>
+              <div style="padding:12px 16px;display:flex;flex-direction:column;gap:0">
+                @php
+                  $fields = [
+                    ['date','transaction_date','Date of transaction','#dbeafe','#1d4ed8'],
+                    ['#','amount','Amount (negative = expense)','#d1fae5','#065f46'],
+                    ['T','merchant_name','Merchant / payee name','#f3e8ff','#7c3aed'],
+                    ['i','description','Transaction type or note','#fef3c7','#92400e'],
+                    ['$','currency','Currency code (KZT, USD…)','#e0f2fe','#0369a1'],
+                  ];
+                @endphp
+                @foreach($fields as $f)
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6;{{ $loop->last ? 'border-bottom:none' : '' }}">
+                  <div style="width:22px;height:22px;border-radius:5px;background:{{ $f[3] }};color:{{ $f[4] }};font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ $f[0] }}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:11px;font-weight:600;color:#111827;font-family:monospace">{{ $f[1] }}</div>
+                    <div style="font-size:10px;color:#6b7280">{{ $f[2] }}</div>
+                  </div>
+                </div>
+                @endforeach
+              </div>
+            </div>
+
+            {{-- Recent imports --}}
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent imports</div></div>
+              @forelse ($recentImports as $import)
+              <div class="upcoming-row">
+                <div style="width:30px;height:30px;border-radius:7px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12px;font-weight:500;color:#111827">{{ \Carbon\Carbon::parse($import->import_date)->format('M j, Y') }}</div>
+                </div>
+                <span style="background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">
+                  {{ number_format($import->total) }} tx
+                </span>
+              </div>
+              @empty
+              <div class="empty-state">No imports yet.</div>
+              @endforelse
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
 
@@ -545,7 +773,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">All transactions</div>
-            <div class="panel-action" id="tx-count">{{ $transactions->count() }} records</div>
+            <div class="panel-action" id="tx-count">
+              @if ($transactionCount > $transactions->count())
+                showing {{ number_format($transactions->count()) }} of {{ number_format($transactionCount) }} records
+              @else
+                {{ number_format($transactionCount) }} records
+              @endif
+            </div>
           </div>
           <div id="tx-list">
           @forelse ($transactions as $tx)
@@ -561,9 +795,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
             </div>
             <div class="sub-right">
               <div class="sub-amount" style="color:{{ $tx->amount < 0 ? '#dc2626' : '#059669' }}">
-                {{ $tx->amount < 0 ? '-' : '+' }}${{ number_format(abs($tx->amount), 2) }}
+                {{ $tx->amount < 0 ? '-' : '+' }}{{ number_format(abs($tx->amount), 2) }} {{ $tx->currency ?? 'USD' }}
               </div>
-              <div class="sub-next">{{ $tx->currency ?? 'USD' }}</div>
+              <div class="sub-next">{{ \Carbon\Carbon::parse($tx->transaction_date)->format('M j') }}</div>
             </div>
           </div>
           @empty
@@ -694,7 +928,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
     <!-- SUBSCRIPTIONS -->
     <div id="page-subscriptions" style="display:none;">
-      <div class="topbar"><div class="page-title">All subscriptions</div></div>
+      <div class="topbar">
+        <div class="page-title">All subscriptions</div>
+        <div class="topbar-actions">
+          <button class="btn" onclick="setPage('detected')" style="position:relative">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v2M8 11v2M3 8H1M15 8h-2M5.05 5.05 3.64 3.64M12.36 12.36l-1.41-1.41M10.95 5.05l1.41-1.41M3.64 12.36l1.41-1.41" stroke-linecap="round"/></svg>
+            Review Detections
+            @if ($detected->count() > 0)
+            <span style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:9999px;font-size:10px;font-weight:700;padding:1px 5px;line-height:16px">{{ $detected->count() }}</span>
+            @endif
+          </button>
+          <form method="POST" action="{{ route('detect') }}" style="display:inline" id="detect-form-subs">
+            @csrf
+            <button type="submit" class="btn primary" id="detect-btn-subs">
+              <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5"><path d="M13 8A5 5 0 1 1 8 3" stroke-linecap="round"/><path d="M13 3v3h-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-scan
+            </button>
+          </form>
+        </div>
+      </div>
       <div class="content">
         <div class="panel">
           @forelse ($subscriptions as $sub)
@@ -725,6 +977,73 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
 </div>
 
+<!-- EDIT SUBSCRIPTION MODAL -->
+<div id="edit-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center" onclick="closeEditModal(event)">
+  <div style="background:#fff;border-radius:12px;width:100%;max-width:440px;margin:0 16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+
+    <div style="padding:20px 24px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:15px;font-weight:700;color:#111827">Edit subscription</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;line-height:1">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3 3 13"/></svg>
+      </button>
+    </div>
+
+    <form id="edit-modal-form" method="POST" style="padding:20px 24px 24px">
+      @csrf
+      @method('PATCH')
+
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Service name</label>
+        <input id="edit-name" name="name" type="text" required maxlength="255"
+          style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#111827;box-sizing:border-box;outline:none"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d1d5db'">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Amount</label>
+          <input id="edit-amount" name="amount" type="number" step="0.01" min="0" required
+            style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#111827;box-sizing:border-box;outline:none"
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d1d5db'">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Currency</label>
+          <input id="edit-currency" name="currency" type="text" maxlength="3" required
+            style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#111827;box-sizing:border-box;outline:none;text-transform:uppercase"
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d1d5db'">
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Billing cycle</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="edit-cycle-btns">
+          @foreach(['weekly','monthly','quarterly','yearly'] as $cycle)
+          <label style="cursor:pointer">
+            <input type="radio" name="billing_cycle" value="{{ $cycle }}" style="display:none" class="cycle-radio">
+            <div class="cycle-option" data-val="{{ $cycle }}"
+              style="text-align:center;padding:8px 4px;border:1px solid #d1d5db;border-radius:8px;font-size:11px;font-weight:600;color:#374151;transition:all .15s;user-select:none">
+              {{ ucfirst($cycle) }}
+            </div>
+          </label>
+          @endforeach
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button type="button" onclick="closeEditModal()"
+          style="flex:1;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;font-weight:600;color:#374151;cursor:pointer">
+          Cancel
+        </button>
+        <button type="submit"
+          style="flex:2;padding:10px;border:none;border-radius:8px;background:#1a56db;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          Save &amp; Confirm
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
 <script>
 var pages = ['dashboard','detected','alerts','reports','import','transactions','subscriptions','merchants','profile'];
 
@@ -742,22 +1061,35 @@ function setPage(name) {
 }
 
 function updateImportLabel(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
   var label = document.getElementById('drop-label');
-  if (input.files && input.files[0]) {
-    label.textContent = '📄 ' + input.files[0].name;
+  var preview = document.getElementById('file-preview');
+  var fileName = document.getElementById('file-name');
+  var fileSize = document.getElementById('file-size');
+  label.textContent = file.name;
+  if (preview) {
+    preview.style.display = 'flex';
+    fileName.textContent = file.name;
+    fileSize.textContent = (file.size / 1024).toFixed(0) + ' KB';
   }
 }
 
 var dropZone = document.getElementById('drop-zone');
 if (dropZone) {
-  dropZone.addEventListener('click', function() {
-    document.getElementById('csv_file').click();
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--brand)';
+    dropZone.style.background = '#eff6ff';
   });
-  dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.style.background = '#eff6ff'; });
-  dropZone.addEventListener('dragleave', function() { dropZone.style.background = ''; });
+  dropZone.addEventListener('dragleave', function() {
+    dropZone.style.borderColor = '#d1d5db';
+    dropZone.style.background = '#fafafa';
+  });
   dropZone.addEventListener('drop', function(e) {
     e.preventDefault();
-    dropZone.style.background = '';
+    dropZone.style.borderColor = '#d1d5db';
+    dropZone.style.background = '#fafafa';
     var file = e.dataTransfer.files[0];
     if (file) {
       var input = document.getElementById('csv_file');
@@ -774,7 +1106,7 @@ if (importForm) {
   importForm.addEventListener('submit', function() {
     var btn = document.getElementById('import-submit-btn');
     btn.disabled = true;
-    btn.textContent = '⏳ Uploading…';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Importing…';
   });
 }
 
@@ -830,26 +1162,89 @@ function clearMerchantFilters() {
   filterMerchants();
 }
 
-// Detect button loading state
-var detectForm = document.getElementById('detect-form');
-if (detectForm) {
-  detectForm.addEventListener('submit', function() {
-    var btn = document.getElementById('detect-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Running…';
+// Detect / re-scan loading state for all three forms
+['detect-form','detect-form-subs','detect-form-det'].forEach(function(id) {
+  var form = document.getElementById(id);
+  if (!form) return;
+  form.addEventListener('submit', function() {
+    form.querySelectorAll('button[type=submit]').forEach(function(btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Scanning…';
+    });
   });
+});
+
+// Edit subscription modal
+var baseUpdateUrl = '{{ url('/subscriptions') }}/';
+
+function openEditModal(id, name, amount, cycle, currency) {
+  var form = document.getElementById('edit-modal-form');
+  form.action = baseUpdateUrl + id;
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-amount').value = amount;
+  document.getElementById('edit-currency').value = currency;
+
+  // cycle radio buttons visual state
+  document.querySelectorAll('.cycle-radio').forEach(function(radio) {
+    radio.checked = radio.value === cycle;
+  });
+  document.querySelectorAll('.cycle-option').forEach(function(opt) {
+    var active = opt.dataset.val === cycle;
+    opt.style.background = active ? '#eff6ff' : '#fff';
+    opt.style.borderColor = active ? '#1a56db' : '#d1d5db';
+    opt.style.color = active ? '#1a56db' : '#374151';
+  });
+
+  var backdrop = document.getElementById('edit-modal-backdrop');
+  backdrop.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(function() { document.getElementById('edit-name').focus(); }, 50);
 }
 
-// Auto-open profile page if profile was updated
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('edit-modal-backdrop')) return;
+  document.getElementById('edit-modal-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Cycle option click styling
+document.querySelectorAll('.cycle-option').forEach(function(opt) {
+  opt.addEventListener('click', function() {
+    var val = opt.dataset.val;
+    document.querySelectorAll('.cycle-option').forEach(function(o) {
+      var active = o.dataset.val === val;
+      o.style.background = active ? '#eff6ff' : '#fff';
+      o.style.borderColor = active ? '#1a56db' : '#d1d5db';
+      o.style.color = active ? '#1a56db' : '#374151';
+    });
+    document.querySelectorAll('.cycle-radio').forEach(function(r) {
+      r.checked = r.value === val;
+    });
+  });
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('edit-modal-backdrop').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+});
+
+// Auto-open correct page based on session or errors
 @if (session('status') === 'profile-updated')
   setPage('profile');
-@endif
-
-// Auto-open import page if there are validation errors
-@if ($errors->any())
+@elseif ($errors->has('csv_file') || session('open_page') === 'import')
   setPage('import');
+@elseif (session('open_page'))
+  setPage('{{ session('open_page') }}');
+@elseif ($errors->any())
+  setPage('profile');
 @endif
 </script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 
 </body>
 </html>
