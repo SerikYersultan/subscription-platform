@@ -5,7 +5,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\MerchantController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\AlertController;
 use Illuminate\Support\Facades\Route;
