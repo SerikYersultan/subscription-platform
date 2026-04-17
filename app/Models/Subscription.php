@@ -28,4 +28,9 @@ class Subscription extends Model
     {
         return $this->hasMany(Alert::class);
     }
+
+    public function alerts(): HasMany
+    {
+        return $this->hasMany(Alert::class);
+    }
 }
