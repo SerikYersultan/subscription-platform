@@ -4,16 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Subscription;
 use App\Services\AlertService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 
 class SubscriptionController extends Controller
 {
     public function index(): View
     {
         $subscriptions = Subscription::where('user_id', auth()->id())
-            ->orderBy('merchant_name')
+            ->orderBy('name')
             ->get();
 
         return view('subscriptions.index', compact('subscriptions'));
@@ -24,68 +24,82 @@ class SubscriptionController extends Controller
         return view('subscriptions.create');
     }
 
-    public function store(Request $request, AlertService $alertService): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'merchant_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'status' => 'required|string',
-            'next_charge_date' => 'nullable|date',
+            'name'              => 'required|string|max:255',
+            'amount'            => 'required|numeric|min:0',
+            'currency'          => 'required|string|size:3',
+            'billing_cycle'     => 'required|in:weekly,monthly,quarterly,yearly',
+            'status'            => 'required|in:active,cancelled,paused',
+            'next_billing_date' => 'nullable|date',
         ]);
 
-        $subscription = Subscription::create([
-            'user_id' => auth()->id(),
-            ...$validated
+        Subscription::create([
+            'user_id'         => auth()->id(),
+            'confidence_score' => 0,
+            ...$validated,
         ]);
 
-        return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription created successfully.');
+        return redirect()->route('dashboard')
+            ->with('success', 'Subscription added.');
     }
 
-    public function update(Request $request, Subscription $subscription, AlertService $alertService): RedirectResponse
+    public function confirm(Subscription $subscription): RedirectResponse
     {
-        // Проверяем, что подписка принадлежит пользователю
         if ($subscription->user_id !== auth()->id()) {
             abort(403);
         }
 
-        // Сохраняем старую цену
-        $oldAmount = $subscription->amount;
+        $subscription->update(['confidence_score' => 0]);
 
-        // Валидация
+        return redirect()->route('dashboard')
+            ->with('open_page', 'detected')
+            ->with('success', "Confirmed \"{$subscription->name}\".");
+    }
+
+    public function update(Request $request, Subscription $subscription, AlertService $alertService): RedirectResponse
+    {
+        if ($subscription->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $oldAmount = (float) $subscription->amount;
+
         $validated = $request->validate([
-            'merchant_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'status' => 'required|string',
-            'next_charge_date' => 'nullable|date',
+            'name'          => 'required|string|max:255',
+            'amount'        => 'required|numeric|min:0',
+            'currency'      => 'required|string|size:3',
+            'billing_cycle' => 'required|in:weekly,monthly,quarterly,yearly',
         ]);
 
-        // Обновляем
-        $subscription->update($validated);
+        $subscription->update([
+            ...$validated,
+            'confidence_score' => 0,
+        ]);
 
-        // Проверяем изменение цены
-        $alertService->createPriceIncreaseAlert($subscription, $oldAmount, $subscription->amount);
+        $newAmount = (float) $validated['amount'];
+        $alertService->createPriceIncreaseAlert($subscription, $oldAmount, $newAmount);
 
-        return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription updated successfully.');
+        return redirect()->route('dashboard')
+            ->with('open_page', 'detected')
+            ->with('success', "Updated \"{$subscription->name}\".");
     }
 
     public function destroy(Subscription $subscription): RedirectResponse
     {
-        // Проверяем, что подписка принадлежит пользователю
         if ($subscription->user_id !== auth()->id()) {
             abort(403);
         }
 
         $subscription->delete();
 
-        return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription deleted successfully.');
+        return redirect()->route('dashboard')
+            ->with('success', 'Subscription removed.');
     }
 
     public function show(Subscription $subscription): View
     {
-        // Проверяем, что подписка принадлежит пользователю
         if ($subscription->user_id !== auth()->id()) {
             abort(403);
         }

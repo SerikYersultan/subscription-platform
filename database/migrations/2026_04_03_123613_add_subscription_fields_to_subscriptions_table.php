@@ -9,17 +9,25 @@ return new class extends Migration
     public function up()
     {
         Schema::table('subscriptions', function (Blueprint $table) {
-            $table->string('merchant_name')->after('user_id');
-            $table->decimal('amount', 10, 2)->after('merchant_name');
-            $table->string('status')->default('active')->after('amount');
-            $table->date('next_charge_date')->nullable()->after('status');
+            if (!Schema::hasColumn('subscriptions', 'merchant_name')) {
+                $table->string('merchant_name')->after('user_id')->nullable();
+            }
+            if (!Schema::hasColumn('subscriptions', 'next_charge_date')) {
+                $table->date('next_charge_date')->nullable();
+            }
         });
     }
 
     public function down()
     {
         Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropColumn(['merchant_name', 'amount', 'status', 'next_charge_date']);
+            $columns = array_filter(
+                ['merchant_name', 'next_charge_date'],
+                fn($c) => Schema::hasColumn('subscriptions', $c)
+            );
+            if ($columns) {
+                $table->dropColumn(array_values($columns));
+            }
         });
     }
 };

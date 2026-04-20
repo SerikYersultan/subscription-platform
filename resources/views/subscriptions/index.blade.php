@@ -6,24 +6,26 @@
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 text-gray-900">
                 <h2 class="text-2xl font-bold mb-4">My Subscriptions</h2>
-                
+
                 @if($subscriptions->count() > 0)
                     <table class="min-w-full border">
                         <thead>
                             <tr class="bg-gray-100">
-                                <th class="px-4 py-2 text-left">Merchant</th>
+                                <th class="px-4 py-2 text-left">Name</th>
                                 <th class="px-4 py-2 text-left">Amount</th>
+                                <th class="px-4 py-2 text-left">Cycle</th>
                                 <th class="px-4 py-2 text-left">Status</th>
-                                <th class="px-4 py-2 text-left">Next Charge Date</th>
+                                <th class="px-4 py-2 text-left">Next Billing Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($subscriptions as $subscription)
                             <tr class="border-t">
-                                <td class="px-4 py-2">{{ $subscription->merchant_name }}</td>
-                                <td class="px-4 py-2">${{ number_format($subscription->amount, 2) }}</td>
-                                <td class="px-4 py-2">{{ $subscription->status }}</td>
-                                <td class="px-4 py-2">{{ $subscription->next_charge_date }}</td>
+                                <td class="px-4 py-2">{{ $subscription->name }}</td>
+                                <td class="px-4 py-2">{{ number_format(abs($subscription->amount), 2) }} {{ $subscription->currency }}</td>
+                                <td class="px-4 py-2">{{ ucfirst($subscription->billing_cycle) }}</td>
+                                <td class="px-4 py-2">{{ ucfirst($subscription->status) }}</td>
+                                <td class="px-4 py-2">{{ $subscription->next_billing_date ? $subscription->next_billing_date->format('M j, Y') : '—' }}</td>
                             </tr>
                             @endforeach
                         </tbody>

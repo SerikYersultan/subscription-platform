@@ -31,39 +31,34 @@ class AlertService
         }
     }
 
-public function createUpcomingChargeAlert(Subscription $subscription, int $daysBefore = 3): void
-{
-    if (!$subscription->next_charge_date) {
-        return;
-    }
+    public function createUpcomingChargeAlert(Subscription $subscription, int $daysBefore = 3): void
+    {
+        if (!$subscription->next_billing_date) {
+            return;
+        }
 
-    $chargeDate = \Carbon\Carbon::parse($subscription->next_charge_date)->startOfDay();
-    $today = \Carbon\Carbon::now()->startOfDay();
-    
-    // Проверяем, что дата списания между сегодня и сегодня+daysBefore
-    if ($chargeDate->lt($today) || $chargeDate->gt($today->copy()->addDays($daysBefore))) {
-        return;
-    }
+        $chargeDate = Carbon::parse($subscription->next_billing_date)->startOfDay();
+        $today = Carbon::now()->startOfDay();
 
-    // Проверяем, нет ли уже алерта для этой подписки
-    $exists = Alert::where('user_id', $subscription->user_id)
-        ->where('subscription_id', $subscription->id)
-        ->where('type', 'upcoming_charge')
-        ->exists();
+        if ($chargeDate->lt($today) || $chargeDate->gt($today->copy()->addDays($daysBefore))) {
+            return;
+        }
 
-    if (!$exists) {
-        Alert::create([
-            'user_id' => $subscription->user_id,
-            'subscription_id' => $subscription->id,
-            'type' => 'upcoming_charge',
-            'message' => "Upcoming charge for {$subscription->merchant_name} on {$chargeDate->format('Y-m-d')}",
-            'status' => 'new',
-        ]);
-        
-        // Вывод в консоль для проверки
-        echo "Alert created for {$subscription->merchant_name}\n";
+        $exists = Alert::where('user_id', $subscription->user_id)
+            ->where('subscription_id', $subscription->id)
+            ->where('type', 'upcoming_charge')
+            ->exists();
+
+        if (!$exists) {
+            Alert::create([
+                'user_id'         => $subscription->user_id,
+                'subscription_id' => $subscription->id,
+                'type'            => 'upcoming_charge',
+                'message'         => "Upcoming charge for {$subscription->name} on {$chargeDate->format('Y-m-d')}",
+                'status'          => 'new',
+            ]);
+        }
     }
-}
     public function checkAllSubscriptions(): void
     {
         $subscriptions = Subscription::all();

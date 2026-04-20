@@ -8,16 +8,15 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::table('subscriptions', function (Blueprint $table) {
-            $table->foreignId('user_id')->after('id')->constrained()->onDelete('cascade');
-        });
+        if (!Schema::hasColumn('subscriptions', 'user_id')) {
+            Schema::table('subscriptions', function (Blueprint $table) {
+                $table->foreignId('user_id')->after('id')->constrained()->onDelete('cascade');
+            });
+        }
     }
 
     public function down()
     {
-        Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropColumn('user_id');
-        });
+        // Only drop if this migration actually added it (i.e. it wasn't in the create migration)
     }
 };

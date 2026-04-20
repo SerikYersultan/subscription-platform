@@ -43,8 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
     Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
     Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
-    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
+    Route::patch('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
     Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
+    Route::post('/subscriptions/{subscription}/confirm', [SubscriptionController::class, 'confirm'])->name('subscriptions.confirm');
 
     // Alerts
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
@@ -55,9 +56,7 @@ Route::middleware('auth')->group(function () {
 
     // Run subscription detector
     Route::post('/detect', [DashboardController::class, 'detect'])->name('detect');
-    
-    // для пдф файла
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+
     Route::get('/reports/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/alerts-pdf', [ReportController::class, 'alertsPdf'])->name('reports.alerts.pdf');
 

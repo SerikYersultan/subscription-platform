@@ -190,7 +190,7 @@ class SubscriptionDetectorService
             return null;
         }
 
-        $amounts = $sorted->pluck('amount')->map(fn ($a) => (float) $a);
+        $amounts = $sorted->pluck('amount')->map(fn ($a) => abs((float) $a));
 
         $confidence = min(100, max(0,
             $keywordScore

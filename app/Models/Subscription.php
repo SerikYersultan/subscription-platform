@@ -10,15 +10,22 @@ class Subscription extends Model
 {
     protected $fillable = [
         'user_id',
-        'merchant_name',
+        'merchant_id',
+        'name',
         'amount',
+        'currency',
+        'billing_cycle',
         'status',
-        'next_charge_date',
+        'confidence_score',
+        'next_billing_date',
+        'detected_at',
     ];
 
     protected $casts = [
-        'next_charge_date' => 'date',
+        'next_billing_date' => 'date',
+        'detected_at' => 'datetime',
         'amount' => 'decimal:2',
+        'confidence_score' => 'decimal:2',
     ];
 
     public function user(): BelongsTo
