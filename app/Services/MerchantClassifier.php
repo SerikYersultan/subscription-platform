@@ -5,6 +5,7 @@ namespace App\Services;
 class MerchantClassifier
 {
     private const POSITIVE_KEYWORDS = [
+        // Generic subscription signals
         'plus',
         'premium',
         'pro',
@@ -12,18 +13,26 @@ class MerchantClassifier
         'subscribe',
         'member',
         'membership',
-        'music',
-        'kinopoisk',
+        'streaming',
         'cloud',
         'storage',
+        // Apple
+        'apple.com',
+        'apple tv',
+        'icloud',
+        // Google
+        'google.com',
+        'google one',
+        // Microsoft
+        'microsoft',
+        'microsoft.com',
+        'office',
+        'onedrive',
+        // Music & video
+        'music',
+        'kinopoisk',
         'netflix',
         'spotify',
-        'adobe',
-        'figma',
-        'chatgpt',
-        'canva',
-        'dropbox',
-        'icloud',
         'youtube',
         'hulu',
         'disney',
@@ -31,6 +40,12 @@ class MerchantClassifier
         'peacock',
         'deezer',
         'tidal',
+        // Software & productivity
+        'adobe',
+        'figma',
+        'chatgpt',
+        'canva',
+        'dropbox',
         'duolingo',
         'grammarly',
         'notion',
@@ -38,40 +53,21 @@ class MerchantClassifier
         'zoom',
         'github',
         'jetbrains',
-        'office',
-        'microsoft',
-        'apple tv',
-        'google one',
-        'onedrive',
-        'streaming',
+        // Russian streaming / subscription services (Cyrillic)
+        'кинопоиск',
+        'яндекс плюс',
+        'яндекс музыка',
     ];
 
     private const NEGATIVE_KEYWORDS = [
+        // Ride-hailing
         'go',
         'taxi',
         'ride',
+        // Food & delivery
         'eats',
         'lavka',
-        'market',
-        'grocery',
-        'supermarket',
-        'hypermarket',
-        'fuel',
-        'petrol',
-        'gas station',
-        'restaurant',
-        'cafe',
-        'coffee',
         'delivery',
-        'pharmacy',
-        'drugstore',
-        'transfer',
-        'atm',
-        'p2p',
-        'cash',
-        'withdraw',
-        'parking',
-        'toll',
         'food',
         'burger',
         'pizza',
@@ -79,6 +75,37 @@ class MerchantClassifier
         'kebab',
         'shaurma',
         'fastfood',
+        'restaurant',
+        'cafe',
+        'coffee',
+        // Retail & shopping
+        'market',
+        'grocery',
+        'supermarket',
+        'hypermarket',
+        'магазин',        // shop (Russian)
+        // Fuel & transport
+        'fuel',
+        'petrol',
+        'gas station',
+        'parking',
+        'toll',
+        // Financial transfers
+        'transfer',
+        'atm',
+        'p2p',
+        'cash',
+        'withdraw',
+        'deposit',
+        'to card',
+        'from card',
+        'аппарат',        // self-service machine / ATM (Russian)
+        'самообслуживания', // self-service (Russian)
+        // Utilities & rentals
+        'pharmacy',
+        'drugstore',
+        'powerbank',
+        'rental',
     ];
 
     private const POSITIVE_CATEGORIES = [
@@ -112,7 +139,7 @@ class MerchantClassifier
      */
     public function classify(string $merchantName, ?string $description = null, ?string $category = null): int
     {
-        $text = strtolower(trim($merchantName).' '.trim($description ?? ''));
+        $text = mb_strtolower(trim($merchantName).' '.trim($description ?? ''));
         $score = 0;
 
         foreach (self::POSITIVE_KEYWORDS as $keyword) {
@@ -130,7 +157,7 @@ class MerchantClassifier
         }
 
         if ($category !== null) {
-            $cat = strtolower($category);
+            $cat = mb_strtolower($category);
             foreach (self::POSITIVE_CATEGORIES as $c) {
                 if (str_contains($cat, $c)) {
                     $score += 15;
@@ -150,6 +177,7 @@ class MerchantClassifier
 
     private function matches(string $text, string $keyword): bool
     {
-        return (bool) preg_match('/\b'.preg_quote($keyword, '/').'\\b/i', $text);
+        // /u enables Unicode-aware word boundaries so Cyrillic keywords work correctly.
+        return (bool) preg_match('/\b'.preg_quote($keyword, '/').'\\b/iu', $text);
     }
 }

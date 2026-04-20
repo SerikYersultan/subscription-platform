@@ -290,7 +290,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div class="content">
 
         @if (session('success'))
-          <div class="flash-success">✅ {{ session('success') }}</div>
+          <div class="flash-success" id="flash-success">✅ {{ session('success') }}</div>
         @endif
 
         @if ($transactionCount > 0 && $subscriptions->isEmpty())
@@ -1230,6 +1230,16 @@ document.addEventListener('keydown', function(e) {
     document.body.style.overflow = '';
   }
 });
+
+// Auto-hide flash success after 7 seconds
+var flashEl = document.getElementById('flash-success');
+if (flashEl) {
+  setTimeout(function() {
+    flashEl.style.transition = 'opacity 0.4s ease';
+    flashEl.style.opacity = '0';
+    setTimeout(function() { flashEl.style.display = 'none'; }, 400);
+  }, 7000);
+}
 
 // Auto-open correct page based on session or errors
 @if (session('status') === 'profile-updated')

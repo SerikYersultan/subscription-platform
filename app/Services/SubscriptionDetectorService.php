@@ -30,6 +30,7 @@ class SubscriptionDetectorService
     public function detect(int $userId): Collection
     {
         $transactions = Transaction::where('user_id', $userId)
+            ->where('amount', '<', 0)   // subscriptions are outgoing payments only
             ->orderBy('transaction_date')
             ->get();
 
@@ -152,13 +153,21 @@ class SubscriptionDetectorService
      */
     private function analyzeGroup(Collection $txGroup): ?array
     {
-        $count = $txGroup->count();
+        $sorted = $txGroup->sortBy('transaction_date')->values();
+
+        // Deduplicate by calendar date: if the same charge was imported twice on
+        // the same day (e.g. data loaded before source_hash dedup was in place),
+        // keeping both would produce a 0-day interval that breaks all scoring.
+        $sorted = $sorted
+            ->unique(fn ($t) => Carbon::parse($t->transaction_date)->format('Y-m-d'))
+            ->values();
+
+        $count = $sorted->count();
 
         if ($count < self::MIN_TRANSACTIONS) {
             return null;
         }
 
-        $sorted = $txGroup->sortBy('transaction_date')->values();
         $first = $sorted->first();
 
         $keywordScore = $this->classifier->classify(
