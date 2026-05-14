@@ -152,7 +152,7 @@
             overflow-y: auto;
         }
 
-        .sidebar-logo { padding: 16px; border-bottom: 1px solid #fee2e2; }
+        .sidebar-logo { padding: 0px; border-bottom: 1px solid #fee2e2; }
         .logo-mark { display: flex; align-items: center; gap: 8px; }
 
         .logo-icon {
@@ -689,17 +689,25 @@
 
 <div class="app">
   <div class="sidebar">
-    <div class="sidebar-logo" onclick="setPage('dashboard')" style="cursor:pointer">
-      <div class="logo-mark">
-        <div class="logo-icon">
-          <svg viewBox="0 0 16 16"><path d="M8 2C4.7 2 2 4.7 2 8s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm0 8c-1.7 0-3.1-.8-4-2 .1-1.3 2.7-2 4-2s3.9.7 4 2c-.9 1.2-2.3 2-4 2z"/></svg>
-        </div>
-        <div>
-          <div class="logo-text">SubTrack</div>
-          <div class="logo-sub">Intelligence Platform</div>
-        </div>
+      <div class="sidebar-logo" onclick="setPage('dashboard')" style="cursor:pointer; padding: 5px 15px;">
+          <div class="logo-mark" style="display: flex; align-items: center; justify-content: flex-start; width: 100%;">
+
+
+              <img src="{{ asset('images/transparent.png') }}"
+                   alt="Logo"
+                   style="width: 100px; height: 100px; object-fit: contain; flex-shrink: 0; margin-left: -15px;">
+
+              <div style="display: flex; flex-direction: column; margin-left: 2px; line-height: 1.1;">
+                  <div style="font-weight: 700; font-size: 14px; color: #374151;">
+                      Financial
+                  </div>
+                  <div style="font-weight: 700; font-size: 14px; color: #374151;">
+                      Clarity
+                  </div>
+              </div>
+
+          </div>
       </div>
-    </div>
     <div class="nav">
       <div class="nav-section">Overview</div>
       <div class="nav-item active" onclick="setPage('dashboard')">
@@ -1323,7 +1331,7 @@
       </div>
     </div>
 
-    <!-- MERCHANTS -->
+
     <div id="page-merchants" style="display:none;">
       <div class="topbar"><div class="page-title">Merchants</div></div>
       <div class="content">
@@ -1371,7 +1379,6 @@
       </div>
     </div>
 
-    <!-- PROFILE -->
     <div id="page-profile" style="display:none;">
       <div class="topbar"><div class="page-title">Profile</div></div>
       <div class="content" style="max-width:560px">
