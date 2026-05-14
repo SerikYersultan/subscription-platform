@@ -6,29 +6,29 @@
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 text-gray-900">
                 <h2 class="text-2xl font-bold mb-6">Reports & Analytics</h2>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div class="bg-blue-100 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold">Total Subscriptions</h3>
                         <p class="text-3xl font-bold">{{ $totalSubscriptions }}</p>
                     </div>
-                    
+
                     <div class="bg-green-100 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold">Active Subscriptions</h3>
                         <p class="text-3xl font-bold">{{ $activeSubscriptions }}</p>
                     </div>
-                    
+
                     <div class="bg-yellow-100 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold">Monthly Spend</h3>
                         <p class="text-3xl font-bold">${{ number_format($totalMonthlySpend, 2) }}</p>
                     </div>
-                    
+
                     <div class="bg-red-100 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold">Unread Alerts</h3>
                         <p class="text-3xl font-bold">{{ $unreadAlerts }}</p>
                     </div>
                 </div>
-                
+
                 @if($recentAlerts->count() > 0)
                 <div class="mt-8">
                     <h3 class="text-xl font-bold mb-4">Recent Alerts</h3>
@@ -52,7 +52,7 @@
                     No recent alerts
                 </div>
                 @endif
-                
+
                 <div class="mt-8 flex gap-4">
                     <a href="{{ route('reports.pdf') }}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
                         Download Subscriptions PDF
