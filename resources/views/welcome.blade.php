@@ -644,13 +644,7 @@
             background: transparent !important;
         }
 
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            background: url('/public/images/back.jpg') center center / cover no-repeat fixed;
-            z-index: -1;
-        }
+
 
         .app,
         .main,
