@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SubTrack</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
     <style>
@@ -618,6 +627,113 @@
         }
 
         .add-card-placeholder:hover { border-color: #b5b4b0; color: var(--text-primary); background: #f5f4f0; }
+
+        /* ═══════════════════════════════════════════════
+           DARK MODE
+        ═══════════════════════════════════════════════ */
+
+        /* Override CSS variables — most elements update automatically */
+        .dark {
+            --bg-main:    #111827;
+            --card-white: #1f2937;
+            --card-dark:  #f9fafb;
+            --text-primary: #f3f4f6;
+            --text-muted:   #9ca3af;
+            --brand:      #e5e7eb;
+            --brand-dark: #d1d5db;
+            --brand-soft: #374151;
+            --green-soft: #052e16;
+        }
+
+        /* body bg uses !important in the original, so we match */
+        .dark body { background: #111827 !important; color: #f3f4f6; }
+
+        /* Sidebar */
+        .dark .sidebar          { border-right-color: #374151; }
+        .dark .sidebar-footer   { border-top-color: #374151; }
+        .dark .nav-section      { color: #6b7280; }
+        .dark .nav-item         { color: #d1d5db; }
+        .dark .nav-item:hover   { background: #374151; color: #f9fafb; }
+        .dark .nav-item.active  { background: #374151; color: #f9fafb; }
+        .dark .nav-badge.blue   { background: #374151; color: #d1d5db; }
+        .dark .user-row:hover   { background: #374151; }
+        .dark .logout-btn       { color: #9ca3af; }
+        .dark .logout-btn:hover { background: #374151; color: #f87171; }
+
+        /* Topbar & buttons */
+        .dark .topbar       { background: #1f2937; }
+        .dark .btn          { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+        .dark .btn:hover    { background: #374151; border-color: #4b5563; }
+        .dark .btn.primary  { background: #e5e7eb; color: #111827; border: none; }
+        .dark .btn.primary:hover { background: #f3f4f6; }
+
+        /* Panels & cards */
+        .dark .metric-card  { box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .dark .panel        { box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .dark .alert-strip  { background: #1f2937; }
+        .dark .alert-strip:hover { background: #374151; }
+        .dark .alert-count  { background: #374151; color: #d1d5db; }
+        .dark .panel-action { color: #9ca3af; }
+        .dark .panel-action:hover { color: #e5e7eb; }
+
+        /* Table rows */
+        .dark .merchant-table th { border-bottom-color: #374151; color: #6b7280; }
+        .dark .merchant-table td { border-bottom-color: #374151; }
+        .dark .merchant-table tr:hover td { background: #374151; }
+
+        /* Tags & pills */
+        .dark .conf-high   { background: #052e16; color: #4ade80; }
+        .dark .conf-med    { background: #422006; color: #fbbf24; }
+        .dark .tag-blue    { background: #1e3a5f; color: #93c5fd; }
+        .dark .tag-amber   { background: #422006; color: #fbbf24; }
+        .dark .tag-red     { background: #450a0a; color: #f87171; }
+        .dark .tag-green   { background: #052e16; color: #4ade80; }
+        .dark .tag-gray    { background: #374151; color: #9ca3af; }
+
+        /* Icon circles */
+        .dark .icon-blue   { background: #1e3a5f; }
+        .dark .icon-green  { background: #052e16; }
+        .dark .icon-amber  { background: #422006; }
+        .dark .icon-red    { background: #450a0a; }
+
+        /* Card placeholder */
+        .dark .add-card-placeholder { background: #374151; border-color: #4b5563; }
+        .dark .add-card-placeholder:hover { background: #374151; border-color: #6b7280; }
+
+        /* Fix harsh bright elements */
+        .dark .sub-logo       { filter: brightness(0.7) saturate(0.75); }
+        .dark .sub-row        { border-bottom-color: #374151; }
+        .dark .sub-row:hover  { background: #374151; }
+        .dark .alert-icon     { filter: brightness(0.65) saturate(0.7); }
+        .dark .alert-row      { border-bottom-color: #374151; }
+        .dark .metric-icon    { filter: brightness(0.85) saturate(0.8); }
+        .dark .tx-row         { border-bottom-color: #374151; }
+
+        /* Theme toggle icon button (top-right of every topbar) */
+        .theme-icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: 1px solid #e2e1dd;
+            background: transparent;
+            cursor: pointer;
+            color: #7e7d7a;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .theme-icon-btn:hover { background: #faf9f5; border-color: #b5b4b0; color: #111; }
+        .dark .theme-icon-btn { border-color: #374151; color: #9ca3af; }
+        .dark .theme-icon-btn:hover { background: #374151; color: #e5e7eb; }
+        .theme-icon-btn svg { width: 15px; height: 15px; pointer-events: none; }
+
+        /* Smooth theme transition */
+        body, .sidebar, .topbar, .panel, .metric-card, .btn,
+        .alert-strip, .nav-item, .user-row, .logout-btn {
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
     </style>
 </head>
 <body>
@@ -732,6 +848,10 @@
                             Re-scan
                         </button>
                     </form>
+                    <button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode">
+                        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -905,6 +1025,10 @@
                             Re-scan
                         </button>
                     </form>
+                    <button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode">
+                        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </button>
                 </div>
             </div>
             <div class="content">
@@ -968,7 +1092,7 @@
 
         <!-- ══ ALERTS ══ -->
         <div id="page-alerts" style="display:none;">
-            <div class="topbar"><div class="page-title">Alerts</div></div>
+            <div class="topbar"><div class="page-title">Alerts</div><div class="topbar-actions"><button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg></button></div></div>
             <div class="content">
                 <div class="panel">
                     @forelse ($alerts as $alert)
@@ -994,7 +1118,7 @@
 
         <!-- ══ REPORTS ══ -->
         <div id="page-reports" style="display:none;">
-            <div class="topbar"><div class="page-title">Monthly reports</div></div>
+            <div class="topbar"><div class="page-title">Monthly reports</div><div class="topbar-actions"><button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg></button></div></div>
             <div class="content">
                 <div class="metrics-row" style="grid-template-columns:repeat(3,minmax(0,1fr))">
                     <div class="metric-card">
@@ -1031,6 +1155,12 @@
         <div id="page-import" style="display:none;">
             <div class="topbar">
                 <div class="page-title">Import Bank Statement</div>
+                <div class="topbar-actions">
+                    <button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode">
+                        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </button>
+                </div>
             </div>
             <div class="content">
 
@@ -1203,7 +1333,7 @@
         </div>
 
         <div id="page-transactions" style="display:none;">
-            <div class="topbar"><div class="page-title">Transactions</div></div>
+            <div class="topbar"><div class="page-title">Transactions</div><div class="topbar-actions"><button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg></button></div></div>
             <div class="content">
                 <div class="filter-bar">
                     <div style="flex:1;min-width:180px">
@@ -1261,7 +1391,7 @@
 
         <!-- ══ MERCHANTS ══ -->
         <div id="page-merchants" style="display:none;">
-            <div class="topbar"><div class="page-title">Merchants</div></div>
+            <div class="topbar"><div class="page-title">Merchants</div><div class="topbar-actions"><button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg></button></div></div>
             <div class="content">
                 <div class="filter-bar">
                     <div style="flex:1;min-width:200px">
@@ -1308,7 +1438,7 @@
         </div>
 
         <div id="page-profile" style="display:none;">
-            <div class="topbar"><div class="page-title">Profile</div></div>
+            <div class="topbar"><div class="page-title">Profile</div><div class="topbar-actions"><button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg></button></div></div>
             <div class="content" style="max-width:560px">
 
                 @if (session('status') === 'profile-updated')
@@ -1346,8 +1476,21 @@
                         </div>
                         <div class="profile-field">
                             <label class="profile-label">New password</label>
-                            <input class="profile-input" type="password" name="password" autocomplete="new-password">
+                            <input id="profile-pw" class="profile-input" type="password" name="password" autocomplete="new-password">
                             @error('password', 'updatePassword') <div class="profile-error">{{ $message }}</div> @enderror
+
+                            <div id="profile-pw-checker" style="display:none; margin-top:8px; padding:10px 12px; background:var(--brand-soft); border-radius:8px; border:1px solid #e2e1dd;">
+                                <div style="font-size:10px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Password strength</div>
+                                <div style="height:3px; background:#e2e1dd; border-radius:3px; margin-bottom:8px; overflow:hidden;">
+                                    <div id="profile-pw-bar" style="height:100%; width:0%; border-radius:3px; transition:all 0.3s ease;"></div>
+                                </div>
+                                <div id="profile-req-length"  style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px; margin-bottom:3px;"><span class="ppw-dot">○</span> At least 8 characters</div>
+                                <div style="font-size:10px; color:var(--text-muted); margin:4px 0 3px; opacity:0.7;">Need 3 or more of:</div>
+                                <div id="profile-req-upper"  style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px; margin-bottom:3px;"><span class="ppw-dot">○</span> Uppercase letters (A–Z)</div>
+                                <div id="profile-req-lower"  style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px; margin-bottom:3px;"><span class="ppw-dot">○</span> Lowercase letters (a–z)</div>
+                                <div id="profile-req-digit"  style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px; margin-bottom:3px;"><span class="ppw-dot">○</span> Numbers (0–9)</div>
+                                <div id="profile-req-symbol" style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px;"><span class="ppw-dot">○</span> Special symbols (!, $, #, %)</div>
+                            </div>
                         </div>
                         <div class="profile-field">
                             <label class="profile-label">Confirm new password</label>
@@ -1392,6 +1535,10 @@
                             Re-scan
                         </button>
                     </form>
+                    <button class="theme-icon-btn" onclick="toggleTheme()" title="Toggle dark mode">
+                        <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </button>
                 </div>
             </div>
             <div class="content">
@@ -1485,6 +1632,61 @@
 </div>
 
 <script>
+    /* ── Dark mode toggle ── */
+    /* ── Profile password strength checker ── */
+    document.addEventListener('DOMContentLoaded', function () {
+        var input   = document.getElementById('profile-pw');
+        var checker = document.getElementById('profile-pw-checker');
+        var bar     = document.getElementById('profile-pw-bar');
+        if (!input) return;
+
+        function setReq(id, ok) {
+            var el  = document.getElementById(id);
+            var dot = el.querySelector('.ppw-dot');
+            el.style.color  = ok ? '#16a34a' : '';
+            dot.textContent = ok ? '●' : '○';
+            return ok ? 1 : 0;
+        }
+
+        input.addEventListener('input', function () {
+            var v = this.value;
+            checker.style.display = v.length > 0 ? 'block' : 'none';
+
+            setReq('profile-req-length', v.length >= 8);
+
+            var score = 0;
+            score += setReq('profile-req-upper',  /[A-Z]/.test(v));
+            score += setReq('profile-req-lower',  /[a-z]/.test(v));
+            score += setReq('profile-req-digit',  /[0-9]/.test(v));
+            score += setReq('profile-req-symbol', /[^A-Za-z0-9]/.test(v));
+
+            var colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
+            var widths = ['25%', '50%', '75%', '100%'];
+            bar.style.width      = v.length < 8 ? '8%'   : (widths[score - 1]  || '8%');
+            bar.style.background = v.length < 8 ? '#ef4444' : (colors[score - 1] || '#ef4444');
+        });
+    });
+
+    function _syncThemeIcons(isDark) {
+        document.querySelectorAll('.theme-moon').forEach(function(el) {
+            el.style.display = isDark ? 'none' : 'block';
+        });
+        document.querySelectorAll('.theme-sun').forEach(function(el) {
+            el.style.display = isDark ? 'block' : 'none';
+        });
+    }
+
+    function toggleTheme() {
+        var isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        _syncThemeIcons(isDark);
+    }
+
+    /* Sync all icon buttons on load */
+    document.addEventListener('DOMContentLoaded', function () {
+        _syncThemeIcons(document.documentElement.classList.contains('dark'));
+    });
+
     var pages = ['dashboard','detected','alerts','reports','import','transactions','subscriptions','merchants','profile'];
 
     function setPage(name) {

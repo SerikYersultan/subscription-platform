@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Apply theme before paint -->
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <title>{{ config('app.name', 'Recurly') }}</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -22,16 +33,40 @@
             --brand: #111827;
             --brand-dark: #111827;
             --green: #111827;
+            --body-bg: #f9fafb;
+            --card-bg: #fff;
+            --card-border: #fee2e2;
+            --title-color: #111827;
+            --sub-color: #6b7280;
+            --label-color: #374151;
+            --input-bg: #fff;
+            --input-color: #111827;
+            --input-border: #d1d5db;
+            --loader-bg: #f9fafb;
+        }
+
+        .dark {
+            --body-bg: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --title-color: #f1f5f9;
+            --sub-color: #94a3b8;
+            --label-color: #cbd5e1;
+            --input-bg: #0f172a;
+            --input-color: #e2e8f0;
+            --input-border: #475569;
+            --loader-bg: #0f172a;
         }
 
         body {
             font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f9fafb;
+            background: var(--body-bg);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow-x: hidden;
+            transition: background 0.2s ease;
         }
 
         /* =========================
@@ -41,12 +76,13 @@
         .loader-overlay {
             position: fixed;
             inset: 0;
-            background: #f9fafb;
+            background: var(--loader-bg);
             z-index: 9999;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            transition: background 0.2s ease;
         }
 
         .loader-overlay.active {
@@ -133,25 +169,26 @@
         }
 
         .auth-card {
-            background: #fff;
+            background: var(--card-bg);
             border-radius: 14px;
-            border: 1px solid #fee2e2;
+            border: 1px solid var(--card-border);
             box-shadow: 0 4px 24px rgba(0,0,0,.04);
             padding: 32px;
             position: relative;
             z-index: 1;
+            transition: background 0.2s ease, border-color 0.2s ease;
         }
 
         .auth-title {
             font-size: 22px;
             font-weight: 700;
-            color: #111827;
+            color: var(--title-color);
             margin-bottom: 6px;
         }
 
         .auth-sub {
             font-size: 14px;
-            color: #6b7280;
+            color: var(--sub-color);
             margin-bottom: 24px;
         }
 
@@ -163,17 +200,18 @@
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: #374151;
+            color: var(--label-color);
             margin-bottom: 6px;
         }
 
         .form-input {
             width: 100%;
             padding: 11px 14px;
-            border: 1px solid #d1d5db;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 8px;
             font-size: 14px;
-            color: #111827;
+            color: var(--input-color);
             outline: none;
             transition: all .15s;
         }
@@ -206,7 +244,7 @@
         .auth-footer {
             text-align: center;
             font-size: 14px;
-            color: #6b7280;
+            color: var(--sub-color);
             margin-top: 20px;
         }
 
@@ -219,10 +257,49 @@
         .auth-link:hover {
             text-decoration: underline;
         }
+
+        /* Dark mode toggle — fixed top-right corner */
+        .guest-theme-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1.5px solid #e5e7eb;
+            background: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+            z-index: 200;
+        }
+        .guest-theme-btn:hover { border-color: #9ca3af; color: #111; background: #f9fafb; }
+        .guest-theme-btn svg   { width: 16px; height: 16px; pointer-events: none; }
+
+        .dark .guest-theme-btn {
+            background: #1e293b;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        .dark .guest-theme-btn:hover { background: #334155; color: #e2e8f0; border-color: #475569; }
     </style>
 </head>
 
 <body>
+
+<!-- Dark mode toggle — visible on every auth page -->
+<button class="guest-theme-btn" onclick="toggleTheme()" title="Toggle dark mode">
+    <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+    </svg>
+    <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="display:none">
+        <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+    </svg>
+</button>
 
 <div id="loader-overlay" class="loader-overlay">
 
@@ -249,6 +326,21 @@
 </div>
 
 <script>
+    function toggleTheme() {
+        var isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        document.querySelectorAll('.theme-moon').forEach(function (el) { el.style.display = isDark ? 'none'  : 'block'; });
+        document.querySelectorAll('.theme-sun').forEach(function  (el) { el.style.display = isDark ? 'block' : 'none';  });
+    }
+
+    /* Sync button icon to current theme immediately */
+    (function () {
+        if (document.documentElement.classList.contains('dark')) {
+            document.querySelectorAll('.theme-moon').forEach(function (el) { el.style.display = 'none';  });
+            document.querySelectorAll('.theme-sun').forEach(function  (el) { el.style.display = 'block'; });
+        }
+    })();
+
     document.addEventListener('DOMContentLoaded', function () {
 
         const form = document.querySelector('form');
