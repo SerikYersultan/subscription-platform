@@ -25,12 +25,15 @@ class ImportController extends Controller
 
         $file = $request->file('csv_file');
         $extension = strtolower($file->getClientOriginalExtension());
+        $cardData = null;
 
         if ($extension === 'pdf') {
             try {
                 $parser = new Parser;
                 $pdf = $parser->parseFile($file->getRealPath());
                 $text = $pdf->getText();
+
+                $cardData = $this->extractCardData($text);
             } catch (\Throwable $e) {
                 return back()
                     ->withErrors(['csv_file' => 'Could not read the PDF. Make sure it is a valid, non-empty PDF.'])
@@ -49,10 +52,23 @@ class ImportController extends Controller
                 ->with('open_page', 'import');
         }
 
+        if ($cardData !== null) {
+            $cards = session('cards', []);
+
+            $cards[] = [
+                ...$cardData,
+                'id' => uniqid('card_', true),
+            ];
+
+            session(['cards' => $cards]);
+        }
+
         $parts = ["{$result['imported']} imported"];
+
         if ($result['duplicates'] > 0) {
             $parts[] = "{$result['duplicates']} duplicates skipped";
         }
+
         if ($result['skipped'] > 0) {
             $parts[] = "{$result['skipped']} invalid rows skipped";
         }
@@ -61,6 +77,40 @@ class ImportController extends Controller
             ->with('open_page', 'import')
             ->with('import_result', $result)
             ->with('success', 'Import complete: ' . implode(', ', $parts) . '.');
+    }
+
+    private function extractCardData(string $text): ?array
+    {
+        $cardName = 'Kaspi Card';
+
+        if (preg_match('/Kaspi\s+Gold/iu', $text)) {
+            $cardName = 'Kaspi Gold';
+        } elseif (preg_match('/Kaspi\s+Red/iu', $text)) {
+            $cardName = 'Kaspi Red';
+        }
+
+        preg_match('/Card number:\s*\*?(\d{4})/iu', $text, $cardMatch);
+        preg_match('/Account number:\s*([A-Z0-9]+)/iu', $text, $accountMatch);
+        preg_match('/Card balance\s+\d{2}\.\d{2}\.\d{2}:\s*\+?\s*([\d\s]+,\d+)\s*₸/iu', $text, $balanceMatch);
+
+        $owner = 'Unknown Owner';
+
+        if (preg_match('/certify\s+that\s+(.+?)\s*,?\s*IIN/ius', $text, $ownerMatch)) {
+            $owner = trim(preg_replace('/\s+/', ' ', $ownerMatch[1]));
+        }
+
+        if (empty($cardMatch[1])) {
+            return null;
+        }
+
+        return [
+            'name' => $cardName,
+            'owner' => $owner,
+            'last4' => $cardMatch[1],
+            'account' => $accountMatch[1] ?? null,
+            'balance' => $balanceMatch[1] ?? '0,00',
+            'currency' => '₸',
+        ];
     }
 
     private function importFromBankStatement(string $text): array
@@ -115,6 +165,7 @@ class ImportController extends Controller
         $date = '20' . $year . '-' . $month . '-' . $day;
 
         $amount = (float) str_replace([' ', ','], ['', '.'], trim($rawAmount));
+
         if ($sign === '-') {
             $amount = -$amount;
         }
@@ -147,7 +198,7 @@ class ImportController extends Controller
 
             $cols = str_getcsv($line);
 
-            if (\count($cols) < 3) {
+            if (count($cols) < 3) {
                 $skipped++;
                 continue;
             }
@@ -158,11 +209,13 @@ class ImportController extends Controller
             $date = date_create(trim($rawDate));
 
             $cleanAmount = preg_replace('/[^0-9.,]/', '', $rawAmount);
+
             if (preg_match('/,\d{1,2}$/', $cleanAmount)) {
                 $cleanAmount = str_replace(['.', ','], ['', '.'], $cleanAmount);
             } else {
                 $cleanAmount = str_replace(',', '', $cleanAmount);
             }
+
             $amount = (float) $cleanAmount;
 
             if (str_starts_with(trim($rawAmount), '-')) {
@@ -202,12 +255,14 @@ class ImportController extends Controller
     private function isValidRow(string $date, float $amount, string $merchant): bool
     {
         $d = \DateTime::createFromFormat('Y-m-d', $date);
+
         if (! $d) {
             return false;
         }
 
         $min = new \DateTime('2000-01-01');
         $max = new \DateTime('+1 year');
+
         if ($d < $min || $d > $max) {
             return false;
         }

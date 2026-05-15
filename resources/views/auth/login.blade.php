@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="auth-title">Welcome back</div>
-    <div class="auth-sub">Sign in to your SubTrack account</div>
+    <div class="auth-sub">Sign in to your Recurly account</div>
 
     @if (session('status'))
         <div class="status-msg">{{ session('status') }}</div>

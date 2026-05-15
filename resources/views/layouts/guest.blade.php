@@ -9,16 +9,19 @@
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-
     <link href="https://fonts.cdnfonts.com/css/glacial-indifference" rel="stylesheet">
 
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
-            --brand: #dc2626;
-            --brand-dark: #991b1b;
-            --green: #16a34a;
+            --brand: #111827;
+            --brand-dark: #111827;
+            --green: #111827;
         }
 
         body {
@@ -31,65 +34,79 @@
             overflow-x: hidden;
         }
 
+        /* =========================
+           LOADER
+        ========================= */
 
         .loader-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background: #f9fafb;
             z-index: 9999;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding-bottom: 15vh;
-        }
-        .loader-overlay.active { display: flex; }
-
-        .loader-logo {
-            height: 380px;
-            width: auto;
-            animation: elegantFadeIn 1s ease-out forwards;
         }
 
-        .slogan-container {
-            margin-top: -120px;
+        .loader-overlay.active {
             display: flex;
-            gap: 10px;
+        }
+
+        .recurly-loader {
+            display: flex;
+            align-items: center;
+            gap: 2px;
             font-family: 'Glacial Indifference', sans-serif;
-            font-size: 26px;
-            font-weight: 700;
-            color: #4b5563;
-            letter-spacing: 0.5px;
-            transform: scale(0.7);
+            font-size: 92px;
+            font-weight: 900;
+            letter-spacing: -5px;
         }
 
-        .slogan-word {
+        .letter {
+            color: var(--green);
             opacity: 0;
-            transform: translateX(-15px);
+            transform: translateY(40px) scale(0.2) rotate(-18deg);
+            animation: recurlyPop 0.75s cubic-bezier(.2, 1.6, .4, 1) forwards;
         }
 
-        /*
-           Aligned Timing:
-           The logo starts appearing at 0s.
-           The words start shifting right away to move with the logo.
-        */
-        .active .word-1 { animation: shiftRight 0.5s ease forwards 0.1s; }
-        .active .word-2 { animation: shiftRight 0.5s ease forwards 0.3s; }
-        .active .word-3 { animation: shiftRight 0.5s ease forwards 0.5s; }
-        .active .word-4 { animation: shiftRight 0.5s ease forwards 0.7s; }
 
-        @keyframes elegantFadeIn {
-            0% { transform: scale(0.95); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        .letter:nth-child(1) { animation-delay: 0s; }
+        .letter:nth-child(2) { animation-delay: .08s; }
+        .letter:nth-child(3) { animation-delay: .16s; }
+        .letter:nth-child(4) { animation-delay: .24s; }
+        .letter:nth-child(5) { animation-delay: .32s; }
+        .letter:nth-child(6) { animation-delay: .40s; }
+        .letter:nth-child(7) { animation-delay: .48s; }
+
+        @keyframes recurlyPop {
+            0% {
+                opacity: 0;
+                transform: translateY(45px) scale(0.1) rotate(-20deg);
+                filter: blur(8px);
+            }
+
+            60% {
+                opacity: 1;
+                transform: translateY(-12px) scale(1.25) rotate(5deg);
+                filter: blur(0);
+            }
+
+            80% {
+                transform: translateY(5px) scale(0.92) rotate(-2deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotate(0);
+            }
         }
 
-        @keyframes shiftRight {
-            to { opacity: 1; transform: translateX(0); }
-        }
 
+
+        /* =========================
+           AUTH
+        ========================= */
 
         .auth-wrap {
             width: 100%;
@@ -125,11 +142,30 @@
             z-index: 1;
         }
 
-        .auth-title { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 6px; }
-        .auth-sub { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+        .auth-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 6px;
+        }
 
-        .form-group { margin-bottom: 18px; }
-        .form-label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+        .auth-sub {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
 
         .form-input {
             width: 100%;
@@ -150,66 +186,90 @@
         .btn-primary {
             width: 100%;
             padding: 12px;
-            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+            background: linear-gradient(135deg, #111827, #000000);
             color: #fff;
             border: none;
             border-radius: 8px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all .15s;
+            transition: all .2s ease;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #ef4444, var(--brand));
-            transform: translateY(-1px);
+            background: linear-gradient(135deg, #1f2937, #111827);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
         }
 
-        .auth-footer { text-align: center; font-size: 14px; color: #6b7280; margin-top: 20px; }
-        .auth-link { color: var(--brand); text-decoration: none; font-size: 13px; }
-        .auth-link:hover { text-decoration: underline; }
+        .auth-footer {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 20px;
+        }
+
+        .auth-link {
+            color: var(--brand);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
+
 <body>
 
 <div id="loader-overlay" class="loader-overlay">
-    <img src="{{ asset('images/transparent.png') }}" alt="Loading Logo" class="loader-logo">
 
-    <div class="slogan-container">
-        <span class="slogan-word word-1">Financial</span>
-        <span class="slogan-word word-2">Clarity</span>
-        <span class="slogan-word word-3">On</span>
-        <span class="slogan-word word-4">Repeat.</span>
+    <div class="recurly-loader">
+        <span class="letter">R</span>
+        <span class="letter">e</span>
+        <span class="letter">c</span>
+        <span class="letter">u</span>
+        <span class="letter">r</span>
+        <span class="letter">l</span>
+        <span class="letter">y</span>
     </div>
+
 </div>
 
 <div class="auth-wrap">
-    <div class="auth-logo">
-        <a href="/" class="logo-mark">
-            <img src="{{ asset('images/transparent.png') }}" alt="Recurly Logo" class="auth-custom-logo">
-        </a>
-    </div>
+
+
 
     <div class="auth-card">
         {{ $slot }}
     </div>
+
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+
         const form = document.querySelector('form');
         const overlay = document.getElementById('loader-overlay');
 
         if (form) {
-            form.addEventListener('submit', function(e) {
+
+            form.addEventListener('submit', function (e) {
+
                 e.preventDefault();
+
                 overlay.classList.add('active');
 
                 setTimeout(() => {
                     form.submit();
-                }, 2000);
+                }, 2200);
+
             });
+
         }
+
     });
 </script>
 
