@@ -1,0 +1,6 @@
+pandas
+scikit-learn
+rapidfuzz
+joblib
+python-dotenv
+sqlalchemy
