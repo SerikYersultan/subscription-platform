@@ -12,7 +12,7 @@ COPY resources/ resources/
 RUN npm run build
 
 # ── Stage 2: PHP — production image ──────────────────────────────────────────
-FROM php:8.3-fpm-alpine AS app
+FROM php:8.4-fpm-alpine AS app
 
 # System dependencies
 RUN apk add --no-cache \
@@ -31,7 +31,7 @@ RUN apk add --no-cache \
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
- && docker-php-ext-install -j$(nproc) \
+ && docker-php-ext-install -j2 \
     pdo_mysql \
     mbstring \
     exif \
@@ -57,15 +57,16 @@ COPY . .
 # копируем скомпилированные фронтенд-ассеты из первого этапа
 COPY --from=frontend /app/public/build public/build
 
-# запускаем оптимизацию автозагрузчика после копирования всех файлов, чтобы учесть все классы
-RUN composer dump-autoload --optimize
-
 # хранение и права доступа
 RUN mkdir -p storage/framework/{sessions,views,cache} \
              storage/logs \
              bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache
+
+ # запускаем оптимизацию автозагрузчика после копирования всех файлов, чтобы учесть все классы
+RUN composer dump-autoload --optimize
+
 
 # Cконфигурируем nginx и supervisor
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
